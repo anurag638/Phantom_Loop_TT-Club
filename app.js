@@ -147,7 +147,7 @@ async function addPlayer(playerData) {
         losses: 0,
         current_streak: 0,
         attendance_status: 'Present',
-        last_seen: new Date().toISOString().split('T')[0],
+            last_seen: formatLocalDate(new Date()),
             win_rate: 0.0,
             createdAt: new Date().toISOString()
         };
@@ -155,6 +155,7 @@ async function addPlayer(playerData) {
         // Add player to Firebase
         const docRef = await addDoc(collection(window.FirebaseDB.db, 'players'), newPlayer);
         newPlayer.id = docRef.id;
+        newPlayer.attendance_history = { [newPlayer.last_seen]: 'Present' };
         
         // Update local array
     players.push(newPlayer);
@@ -194,7 +195,7 @@ async function createUserAccount(playerData, playerId) {
 async function updatePlayer(playerId, updateData) {
     try {
         const { updateDoc, doc } = window.FirebaseDB;
-        const playerRef = doc(window.FirebaseDB.db, 'players', playerId);
+        const playerRef = doc(window.FirebaseDB.db, 'players', String(playerId));
         
         // Recalculate win rate
         const totalGames = updateData.wins + updateData.losses;
@@ -203,7 +204,7 @@ async function updatePlayer(playerId, updateData) {
         await updateDoc(playerRef, updateData);
         
         // Update local array
-    const playerIndex = players.findIndex(p => p.id === playerId);
+        const playerIndex = players.findIndex(p => String(p.id) === String(playerId));
     if (playerIndex !== -1) {
         players[playerIndex] = { ...players[playerIndex], ...updateData };
         }

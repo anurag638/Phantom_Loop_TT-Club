@@ -481,7 +481,7 @@
         }
 
         function handleAttendanceUpdate(event) {
-            const playerId = parseInt(event.target.dataset.playerId);
+            const playerId = event.target.dataset.playerId;
             const status = event.target.value;
             
             TTC.showLoading();
@@ -496,7 +496,7 @@
 
 
         function markAttendanceForDate(event) {
-            const playerId = parseInt(event.target.dataset.playerId);
+            const playerId = event.target.dataset.playerId;
             const dateInput = document.querySelector(`.attendance-date[data-player-id="${playerId}"]`);
             const statusSelect = document.querySelector(`.attendance-select[data-player-id="${playerId}"]`);
             
@@ -599,7 +599,7 @@
             TTC.showLoading();
             
             setTimeout(() => {
-                TTC.updatePlayer(parseInt(formData.get('player_id')), updateData);
+                TTC.updatePlayer(formData.get('player_id'), updateData);
                 TTC.showAlert('Player updated successfully!', 'success');
                 bootstrap.Modal.getInstance(document.getElementById('editPlayerModal')).hide();
                 loadDashboardData();
