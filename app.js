@@ -85,7 +85,10 @@ async function ensureAdminExists() {
         const adminExists = users.some(user => user.username === 'admin');
         
         if (!adminExists) {
+            console.log('Admin account not found. Creating admin account...');
             await createAdminAccount();
+        } else {
+            console.log('Admin account already exists');
         }
     } catch (error) {
         console.error('Error checking admin:', error);
