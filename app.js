@@ -271,8 +271,8 @@ async function addMatch(matchData) {
         // Add to local array
     matches.push(newMatch);
     
-    // Update player statistics
-        await updatePlayerStats(matchData);
+        // Update player statistics using the normalized IDs we just wrote
+        await updatePlayerStats(newMatch);
         
         return newMatch;
     } catch (error) {
@@ -282,11 +282,11 @@ async function addMatch(matchData) {
 }
 
 async function updatePlayerStats(matchData) {
-    const player1 = getPlayerById(matchData.player1_id);
-    const player2 = getPlayerById(matchData.player2_id);
+    const player1 = getPlayerById(String(matchData.player1_id));
+    const player2 = getPlayerById(String(matchData.player2_id));
     
     if (player1 && player2) {
-        if (matchData.winner_id === matchData.player1_id) {
+        if (String(matchData.winner_id) === String(matchData.player1_id)) {
             player1.wins++;
             player2.losses++;
             player1.current_streak = Math.max(0, player1.current_streak) + 1;
