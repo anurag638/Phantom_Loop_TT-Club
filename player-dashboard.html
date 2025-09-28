@@ -474,8 +474,7 @@
                     currentMonth = 11;
                     currentYear--;
                 }
-                calendarContainer.innerHTML = generateCalendarHTML();
-                // rebuild attendance map for new month
+                // Render fresh using loader function only (avoid double innerHTML writes)
                 const user = TTC.getCurrentUser();
                 const player = TTC.getPlayerById(user.playerId);
                 loadAttendanceCalendar(player);
@@ -487,8 +486,6 @@
                     currentMonth = 0;
                     currentYear++;
                 }
-                calendarContainer.innerHTML = generateCalendarHTML();
-                // rebuild attendance map for new month
                 const user = TTC.getCurrentUser();
                 const player = TTC.getPlayerById(user.playerId);
                 loadAttendanceCalendar(player);
@@ -539,37 +536,28 @@
                 const isToday = currentYear === today.getFullYear() && 
                                currentMonth === today.getMonth() && 
                                day === today.getDate();
-                const isFuture = new Date(currentYear, currentMonth, day) > today;
+                const currentDateObj = new Date(currentYear, currentMonth, day);
+                const isFuture = currentDateObj > today;
                 
                 let dayClass = 'calendar-day current-month';
                 let attendanceStatus = '';
                 
-                if (isToday) {
+                const recorded = attendanceData[dateStr];
+                if (recorded === 'Present') {
+                    dayClass += ' present';
+                    attendanceStatus = 'Present';
+                } else if (recorded === 'Absent') {
+                    dayClass += ' absent';
+                    attendanceStatus = 'Absent';
+                } else if (isToday) {
+                    // Today with no explicit record
                     dayClass += ' today';
                     attendanceStatus = 'Today';
                 } else if (isFuture) {
                     dayClass += ' future';
                     attendanceStatus = 'Future';
-                } else if (attendanceData[dateStr]) {
-                    if (attendanceData[dateStr] === 'Present') {
-                        dayClass += ' present';
-                        attendanceStatus = 'Present';
-                    } else if (attendanceData[dateStr] === 'Absent') {
-                        dayClass += ' absent';
-                        attendanceStatus = 'Absent';
-                    } else if (attendanceData[dateStr] === 'Future') {
-                        dayClass += ' future';
-                        attendanceStatus = 'Future';
-                    }
                 } else {
-                    // No data for this date - treat as future or neutral
-                    if (new Date(currentYear, currentMonth, day) > today) {
-                        dayClass += ' future';
-                        attendanceStatus = 'Future';
-                    } else {
-                        // Past date with no data - show as neutral
-                        dayClass += ' no-data';
-                    }
+                    dayClass += ' no-data';
                 }
                 
                 html += `<div class="${dayClass}" data-date="${dateStr}" data-status="${attendanceStatus}">${day}</div>`;
