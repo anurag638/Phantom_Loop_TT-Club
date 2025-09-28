@@ -285,6 +285,8 @@ async function addMatch(matchData) {
 }
 
 async function updatePlayerStats(matchData) {
+    // Ensure we have the freshest players from DB
+    try { await loadPlayersFromFirebase(); } catch (_) {}
     const player1 = getPlayerById(String(matchData.player1_id));
     const player2 = getPlayerById(String(matchData.player2_id));
     
