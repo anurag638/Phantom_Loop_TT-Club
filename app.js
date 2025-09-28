@@ -289,26 +289,32 @@ function getMatches() {
 
 async function addMatch(matchData) {
     try {
+        console.log('Adding match with data:', matchData);
         const { addDoc, collection } = window.FirebaseDB;
-    const newMatch = {
+        const newMatch = {
             player1_id: String(matchData.player1_id),
             player2_id: String(matchData.player2_id),
-        player1_score: matchData.player1_score,
-        player2_score: matchData.player2_score,
+            player1_score: matchData.player1_score,
+            player2_score: matchData.player2_score,
             winner_id: String(matchData.winner_id),
-        match_date: matchData.match_date,
-        created_at: new Date().toISOString()
-    };
-    
+            match_date: matchData.match_date,
+            created_at: new Date().toISOString()
+        };
+        
+        console.log('Normalized match data:', newMatch);
+        
         // Add match to Firebase
         const docRef = await addDoc(collection(window.FirebaseDB.db, 'matches'), newMatch);
         newMatch.id = docRef.id;
+        console.log('Match added to Firebase with ID:', newMatch.id);
         
         // Add to local array
-    matches.push(newMatch);
-    
+        matches.push(newMatch);
+        
         // Update player statistics using the normalized IDs we just wrote
+        console.log('Calling updatePlayerStats...');
         await updatePlayerStats(newMatch);
+        console.log('Player stats updated successfully');
         
         return newMatch;
     } catch (error) {
@@ -318,23 +324,34 @@ async function addMatch(matchData) {
 }
 
 async function updatePlayerStats(matchData) {
+    console.log('Updating player stats for match:', matchData);
     // Ensure we have the freshest players from DB
     try { await loadPlayersFromFirebase(); } catch (_) {}
     const player1 = getPlayerById(String(matchData.player1_id));
     const player2 = getPlayerById(String(matchData.player2_id));
     
+    console.log('Found players:', { player1: player1?.name, player2: player2?.name });
+    
     if (player1 && player2) {
+        console.log('Before update - Player1:', { wins: player1.wins, losses: player1.losses });
+        console.log('Before update - Player2:', { wins: player2.wins, losses: player2.losses });
+        
         if (String(matchData.winner_id) === String(matchData.player1_id)) {
             player1.wins++;
             player2.losses++;
             player1.current_streak = Math.max(0, player1.current_streak) + 1;
             player2.current_streak = Math.min(0, player2.current_streak) - 1;
+            console.log('Player1 won the match');
         } else {
             player2.wins++;
             player1.losses++;
             player2.current_streak = Math.max(0, player2.current_streak) + 1;
             player1.current_streak = Math.min(0, player1.current_streak) - 1;
+            console.log('Player2 won the match');
         }
+        
+        console.log('After update - Player1:', { wins: player1.wins, losses: player1.losses });
+        console.log('After update - Player2:', { wins: player2.wins, losses: player2.losses });
         
         // Update win rates
         const totalGames1 = player1.wins + player1.losses;
@@ -343,11 +360,24 @@ async function updatePlayerStats(matchData) {
         player2.win_rate = totalGames2 > 0 ? (player2.wins / totalGames2 * 100) : 0;
         
         // Persist both players' updated stats
+        console.log('Updating player1 in Firebase:', player1.id, { 
+            wins: player1.wins, 
+            losses: player1.losses, 
+            current_streak: player1.current_streak,
+            win_rate: player1.win_rate
+        });
         await updatePlayer(player1.id, { 
             wins: player1.wins, 
             losses: player1.losses, 
             current_streak: player1.current_streak,
             win_rate: player1.win_rate
+        });
+        
+        console.log('Updating player2 in Firebase:', player2.id, { 
+            wins: player2.wins, 
+            losses: player2.losses, 
+            current_streak: player2.current_streak,
+            win_rate: player2.win_rate
         });
         await updatePlayer(player2.id, { 
             wins: player2.wins, 
@@ -358,9 +388,9 @@ async function updatePlayerStats(matchData) {
         
         // Reload players to ensure UI shows fresh data from DB
         await loadPlayersFromFirebase();
-    
-    // Update rankings
-    updateRankings();
+        
+        // Update rankings
+        updateRankings();
     }
 }
 
