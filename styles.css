@@ -569,6 +569,29 @@ body {
     color: #a0aec0;
 }
 
+/* Force white text for attendance summary and legend */
+.attendance-summary,
+.attendance-summary *,
+.legend,
+.legend *,
+.legend-item,
+.legend-item span {
+    color: white !important;
+}
+
+/* Keep colored icons for legend */
+.legend-item.present i {
+    color: #48bb78 !important;
+}
+
+.legend-item.absent i {
+    color: #f56565 !important;
+}
+
+.legend-item.future i {
+    color: #a0aec0 !important;
+}
+
 .attendance-tooltip {
     position: absolute;
     background: rgba(0, 0, 0, 0.9);
