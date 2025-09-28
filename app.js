@@ -14,6 +14,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Firebase Data Management Functions
+function formatLocalDate(dateObj) {
+    const d = dateObj || new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
 async function initializeFirebaseData() {
     try {
         // Load data from Firebase
@@ -306,7 +313,7 @@ async function updatePlayerStats(matchData) {
 // Attendance Management Functions
 async function updatePlayerAttendance(playerId, status, date = null) {
     try {
-        const attendanceDate = date || new Date().toISOString().split('T')[0];
+        const attendanceDate = date || formatLocalDate(new Date());
         
         // Update in Firebase (including historical record)
         const { updateDoc, doc } = window.FirebaseDB;

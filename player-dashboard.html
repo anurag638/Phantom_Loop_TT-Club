@@ -550,9 +550,16 @@
                     dayClass += ' absent';
                     attendanceStatus = 'Absent';
                 } else if (isToday) {
-                    // Today with no explicit record
-                    dayClass += ' today';
-                    attendanceStatus = 'Today';
+                    // If today and player currently marked Present, show green
+                    const user = TTC.getCurrentUser();
+                    const player = TTC.getPlayerById(user.playerId);
+                    if (player && player.attendance_status === 'Present') {
+                        dayClass += ' present';
+                        attendanceStatus = 'Present';
+                    } else {
+                        dayClass += ' today';
+                        attendanceStatus = 'Today';
+                    }
                 } else if (isFuture) {
                     dayClass += ' future';
                     attendanceStatus = 'Future';
