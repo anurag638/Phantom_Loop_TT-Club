@@ -30,3 +30,7 @@ window.FirebaseDB = {
     where,
     orderBy
 };
+
+// Also make sure Firebase is available globally
+window.firebaseApp = app;
+window.firebaseDB = db;
