@@ -194,7 +194,7 @@ async function createUserAccount(playerData, playerId) {
 
 async function updatePlayer(playerId, updateData) {
     try {
-        console.log('🔄 updatePlayer called with (v11):', playerId, updateData);
+        console.log('🔄 updatePlayer called with (v13):', playerId, updateData);
         console.log('playerId type:', typeof playerId);
         console.log('playerId value:', playerId);
         console.trace('Stack trace for updatePlayer call:');
