@@ -194,7 +194,7 @@ async function createUserAccount(playerData, playerId) {
 
 async function updatePlayer(playerId, updateData) {
     try {
-        console.log('🔄 updatePlayer called with (v13):', playerId, updateData);
+        console.log('🔄 updatePlayer called with (v14):', playerId, updateData);
         console.log('playerId type:', typeof playerId);
         console.log('playerId value:', playerId);
         console.trace('Stack trace for updatePlayer call:');
@@ -394,7 +394,8 @@ async function updatePlayerStats(matchData) {
         if (!player1Id) {
             console.error('player1Id is missing, cannot update player');
         } else {
-            await updatePlayer(player1Id, player1UpdateData);
+            console.log('TEMPORARILY DISABLED: would call updatePlayer(player1Id, player1UpdateData)');
+            // await updatePlayer(player1Id, player1UpdateData);
         }
         
         const player2Id = player2.id;
@@ -412,7 +413,8 @@ async function updatePlayerStats(matchData) {
         if (!player2Id) {
             console.error('player2Id is missing, cannot update player');
         } else {
-            await updatePlayer(player2Id, player2UpdateData);
+            console.log('TEMPORARILY DISABLED: would call updatePlayer(player2Id, player2UpdateData)');
+            // await updatePlayer(player2Id, player2UpdateData);
         }
         
         // Reload players to ensure UI shows fresh data from DB
