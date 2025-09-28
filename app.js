@@ -195,8 +195,17 @@ async function createUserAccount(playerData, playerId) {
 async function updatePlayer(playerId, updateData) {
     try {
         console.log('updatePlayer called with:', playerId, updateData);
+        console.log('playerId type:', typeof playerId);
+        console.log('playerId value:', playerId);
+        
+        if (!playerId) {
+            console.error('playerId is null or undefined');
+            return null;
+        }
+        
         const { updateDoc, doc } = window.FirebaseDB;
         const playerRef = doc(window.FirebaseDB.db, 'players', String(playerId));
+        console.log('Created playerRef:', playerRef.path);
         
         // Use the win_rate from updateData if provided, otherwise calculate it
         if (typeof updateData.win_rate === 'undefined' && updateData.wins !== undefined && updateData.losses !== undefined) {
@@ -375,6 +384,8 @@ async function updatePlayerStats(matchData) {
             current_streak: player1.current_streak,
             win_rate: player1.win_rate
         });
+        console.log('player1.id type:', typeof player1.id);
+        console.log('player1.id value:', player1.id);
         await updatePlayer(player1.id, { 
             wins: player1.wins, 
             losses: player1.losses, 
@@ -388,6 +399,8 @@ async function updatePlayerStats(matchData) {
             current_streak: player2.current_streak,
             win_rate: player2.win_rate
         });
+        console.log('player2.id type:', typeof player2.id);
+        console.log('player2.id value:', player2.id);
         await updatePlayer(player2.id, { 
             wins: player2.wins, 
             losses: player2.losses, 
