@@ -691,3 +691,33 @@ body {
     color: #000 !important;
     background-color: #fff !important;
 }
+
+/* Force dropdown options to have black text */
+#addMatchForm select option {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+/* Override any Bootstrap or other framework styles */
+#addMatchForm .form-select,
+#addMatchForm .form-select option,
+#addMatchForm .form-control,
+#addMatchForm .form-control::placeholder {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+/* Force all select elements in the form to have black text */
+#addMatchForm select[name="player1_id"],
+#addMatchForm select[name="player2_id"],
+#addMatchForm select[name="winner_id"] {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+#addMatchForm select[name="player1_id"] option,
+#addMatchForm select[name="player2_id"] option,
+#addMatchForm select[name="winner_id"] option {
+    color: #000 !important;
+    background-color: #fff !important;
+}
