@@ -125,14 +125,14 @@ function getPlayerById(id) {
 async function addPlayer(playerData) {
     try {
         const { addDoc, collection } = window.FirebaseDB;
-        const newPlayer = {
-            name: playerData.name,
-            rank: playerData.rank,
-            wins: 0,
-            losses: 0,
-            current_streak: 0,
-            attendance_status: 'Present',
-            last_seen: new Date().toISOString().split('T')[0],
+    const newPlayer = {
+        name: playerData.name,
+        rank: playerData.rank,
+        wins: 0,
+        losses: 0,
+        current_streak: 0,
+        attendance_status: 'Present',
+        last_seen: new Date().toISOString().split('T')[0],
             win_rate: 0.0,
             createdAt: new Date().toISOString()
         };
@@ -142,15 +142,15 @@ async function addPlayer(playerData) {
         newPlayer.id = docRef.id;
         
         // Update local array
-        players.push(newPlayer);
+    players.push(newPlayer);
         
         // Create user account for authentication
         await createUserAccount(playerData, newPlayer.id);
-        
+    
         // Send welcome email
-        sendWelcomeEmail(playerData.email, playerData.name, playerData.username, playerData.password);
-        
-        return newPlayer;
+    sendWelcomeEmail(playerData.email, playerData.name, playerData.username, playerData.password);
+    
+    return newPlayer;
     } catch (error) {
         console.error('Error adding player:', error);
         showAlert('Error adding player. Please try again.', 'danger');
@@ -188,16 +188,16 @@ async function updatePlayer(playerId, updateData) {
         await updateDoc(playerRef, updateData);
         
         // Update local array
-        const playerIndex = players.findIndex(p => p.id === playerId);
-        if (playerIndex !== -1) {
-            players[playerIndex] = { ...players[playerIndex], ...updateData };
+    const playerIndex = players.findIndex(p => p.id === playerId);
+    if (playerIndex !== -1) {
+        players[playerIndex] = { ...players[playerIndex], ...updateData };
         }
         
         return players[playerIndex];
     } catch (error) {
         console.error('Error updating player:', error);
-        return null;
-    }
+    return null;
+}
 }
 
 async function deletePlayer(playerId) {
@@ -208,8 +208,8 @@ async function deletePlayer(playerId) {
         await deleteDoc(doc(window.FirebaseDB.db, 'players', playerId));
         
         // Remove from local array
-        const playerIndex = players.findIndex(p => p.id === playerId);
-        if (playerIndex !== -1) {
+    const playerIndex = players.findIndex(p => p.id === playerId);
+    if (playerIndex !== -1) {
             players.splice(playerIndex, 1);
         }
         
@@ -238,24 +238,24 @@ function getMatches() {
 async function addMatch(matchData) {
     try {
         const { addDoc, collection } = window.FirebaseDB;
-        const newMatch = {
-            player1_id: matchData.player1_id,
-            player2_id: matchData.player2_id,
-            player1_score: matchData.player1_score,
-            player2_score: matchData.player2_score,
-            winner_id: matchData.winner_id,
-            match_date: matchData.match_date,
-            created_at: new Date().toISOString()
-        };
-        
+    const newMatch = {
+        player1_id: matchData.player1_id,
+        player2_id: matchData.player2_id,
+        player1_score: matchData.player1_score,
+        player2_score: matchData.player2_score,
+        winner_id: matchData.winner_id,
+        match_date: matchData.match_date,
+        created_at: new Date().toISOString()
+    };
+    
         // Add match to Firebase
         const docRef = await addDoc(collection(window.FirebaseDB.db, 'matches'), newMatch);
         newMatch.id = docRef.id;
         
         // Add to local array
-        matches.push(newMatch);
-        
-        // Update player statistics
+    matches.push(newMatch);
+    
+    // Update player statistics
         await updatePlayerStats(matchData);
         
         return newMatch;
@@ -291,9 +291,9 @@ async function updatePlayerStats(matchData) {
         // Update in Firebase
         await updatePlayer(player1.id, player1);
         await updatePlayer(player2.id, player2);
-        
-        // Update rankings
-        updateRankings();
+    
+    // Update rankings
+    updateRankings();
     }
 }
 
@@ -534,6 +534,7 @@ window.TTC = {
     getPlayerAttendanceHistory,
     
     // Auth functions
+    authenticateUser,
     getCurrentUser,
     setCurrentUser,
     logout,
