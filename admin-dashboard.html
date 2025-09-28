@@ -523,9 +523,8 @@
             }, 300);
         }
 
-        function handleAddMatch(event) {
+        async function handleAddMatch(event) {
             event.preventDefault();
-            
             const formData = new FormData(event.target);
             const matchData = {
                 player1_id: formData.get('player1_id'),
@@ -535,16 +534,17 @@
                 winner_id: formData.get('winner_id'),
                 match_date: formData.get('match_date')
             };
-            
             TTC.showLoading();
-            
-            setTimeout(() => {
-                TTC.addMatch(matchData);
+            try {
+                await TTC.addMatch(matchData);
                 TTC.showAlert('Match added successfully!', 'success');
                 event.target.reset();
                 loadDashboardData();
-                TTC.hideLoading();
-            }, 500);
+            } catch (e) {
+                console.error('Failed to add match', e);
+                TTC.showAlert('Failed to add match', 'danger');
+            }
+            TTC.hideLoading();
         }
 
         function addPlayer() {

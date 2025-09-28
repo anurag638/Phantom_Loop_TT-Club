@@ -310,6 +310,9 @@ async function updatePlayerStats(matchData) {
         // Persist both players' updated stats
         await updatePlayer(player1.id, { wins: player1.wins, losses: player1.losses, current_streak: player1.current_streak });
         await updatePlayer(player2.id, { wins: player2.wins, losses: player2.losses, current_streak: player2.current_streak });
+        
+        // Reload players to ensure UI shows fresh data from DB
+        await loadPlayersFromFirebase();
     
     // Update rankings
     updateRankings();
