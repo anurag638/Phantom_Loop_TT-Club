@@ -197,16 +197,19 @@ async function updatePlayer(playerId, updateData) {
         const { updateDoc, doc } = window.FirebaseDB;
         const playerRef = doc(window.FirebaseDB.db, 'players', String(playerId));
         
-        // Recalculate win rate
-        const totalGames = updateData.wins + updateData.losses;
-        updateData.win_rate = totalGames > 0 ? (updateData.wins / totalGames * 100) : 0;
+        // Recalculate win rate using existing values when wins/losses not provided
+        const existing = getPlayerById(playerId) || {};
+        const wins = typeof updateData.wins === 'number' ? updateData.wins : (existing.wins || 0);
+        const losses = typeof updateData.losses === 'number' ? updateData.losses : (existing.losses || 0);
+        const totalGames = wins + losses;
+        updateData.win_rate = totalGames > 0 ? (wins / totalGames * 100) : 0;
         
         await updateDoc(playerRef, updateData);
         
         // Update local array
         const playerIndex = players.findIndex(p => String(p.id) === String(playerId));
     if (playerIndex !== -1) {
-        players[playerIndex] = { ...players[playerIndex], ...updateData };
+            players[playerIndex] = { ...players[playerIndex], ...updateData, wins, losses };
         }
         
         return players[playerIndex];
@@ -304,9 +307,9 @@ async function updatePlayerStats(matchData) {
         player1.win_rate = totalGames1 > 0 ? (player1.wins / totalGames1 * 100) : 0;
         player2.win_rate = totalGames2 > 0 ? (player2.wins / totalGames2 * 100) : 0;
         
-        // Update in Firebase
-        await updatePlayer(player1.id, player1);
-        await updatePlayer(player2.id, player2);
+        // Persist both players' updated stats
+        await updatePlayer(player1.id, { wins: player1.wins, losses: player1.losses, current_streak: player1.current_streak });
+        await updatePlayer(player2.id, { wins: player2.wins, losses: player2.losses, current_streak: player2.current_streak });
     
     // Update rankings
     updateRankings();
