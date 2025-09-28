@@ -269,7 +269,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js?v=22"></script>
+    <script src="app.js?v=23"></script>
     <script>
         // Check authentication
         if (!TTC.checkAuth()) {
@@ -298,6 +298,11 @@
         // Listen for rankings updates
         document.addEventListener('ttc:rankingsUpdated', function() {
             loadPlayers(); // Refresh only the players table
+        });
+        
+        // Listen for data updates
+        document.addEventListener('ttc:dataUpdated', function() {
+            loadDashboardData(); // Refresh everything
         });
 
         function loadDashboardData() {

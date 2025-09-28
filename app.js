@@ -748,11 +748,21 @@ async function markPlayerAttendance(playerName, status, date) {
         console.log(`Successfully marked ${player.name} as ${status} for ${date}`);
         // Refresh data
         await loadPlayersFromFirebase();
+        
+        // Force UI refresh
+        if (typeof document !== 'undefined') {
+            document.dispatchEvent(new CustomEvent('ttc:dataUpdated'));
+        }
         return true;
     } else {
         console.error(`Failed to mark ${player.name} as ${status} for ${date}`);
         return false;
     }
+}
+
+// Simple function to mark Anurag present for Sep 28
+async function markAnuragPresent() {
+    return await markPlayerAttendance('Anurag', 'Present', '2025-09-28');
 }
 
 async function updateRanksInFirebase() {
@@ -836,6 +846,7 @@ window.TTC = {
     getPlayerAttendanceHistory,
     forceFixRankings,
     markPlayerAttendance,
+    markAnuragPresent,
     
     // Auth functions
     authenticateUser,
