@@ -721,6 +721,14 @@ function updateRankings() {
     }
 }
 
+// Force fix all rankings immediately
+async function forceFixRankings() {
+    console.log('Force fixing all rankings...');
+    await loadPlayersFromFirebase();
+    updateRankings();
+    console.log('Rankings fixed!');
+}
+
 async function updateRanksInFirebase() {
     try {
         const { updateDoc, doc } = window.FirebaseDB;
@@ -800,6 +808,7 @@ window.TTC = {
     deleteAllMatches,
     updatePlayerAttendance,
     getPlayerAttendanceHistory,
+    forceFixRankings,
     
     // Auth functions
     authenticateUser,
