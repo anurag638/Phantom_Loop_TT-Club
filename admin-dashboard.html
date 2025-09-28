@@ -269,7 +269,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=5"></script>
     <script>
         // Check authentication
         if (!TTC.checkAuth()) {
@@ -421,13 +421,18 @@
 
         function loadRecentMatches() {
             const allMatches = TTC.getMatches();
+            console.log('Loading recent matches, total matches:', allMatches.length);
             const matchesToShow = showingAllMatches ? allMatches : allMatches.slice(0, INITIAL_MATCHES_LIMIT);
             const tbody = document.querySelector('#recentMatchesTable tbody');
             const showMoreBtn = document.getElementById('showMoreMatchesBtn');
             
             if (allMatches.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No recent matches found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No recent matches found.</td></tr>';
                 showMoreBtn.style.display = 'none';
+                const deleteAllBtn = document.getElementById('deleteAllMatchesBtn');
+                if (deleteAllBtn) {
+                    deleteAllBtn.style.display = 'none';
+                }
                 return;
             }
             
@@ -618,12 +623,15 @@
             }
 
             // Handle individual match delete buttons
-            document.querySelectorAll('.delete-match-btn').forEach(btn => {
+            const deleteMatchBtns = document.querySelectorAll('.delete-match-btn');
+            console.log('Found delete match buttons:', deleteMatchBtns.length);
+            deleteMatchBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
                     const matchId = this.dataset.matchId;
                     const player1Id = this.dataset.player1Id;
                     const player2Id = this.dataset.player2Id;
                     const winnerId = this.dataset.winnerId;
+                    console.log('Delete match clicked:', matchId);
                     deleteMatch(matchId, player1Id, player2Id, winnerId);
                 });
             });
