@@ -378,35 +378,39 @@ async function updatePlayerStats(matchData) {
         player2.win_rate = totalGames2 > 0 ? (player2.wins / totalGames2 * 100) : 0;
         
         // Persist both players' updated stats
-        console.log('Updating player1 in Firebase:', player1.id, { 
+        const player1UpdateData = { 
             wins: player1.wins, 
             losses: player1.losses, 
             current_streak: player1.current_streak,
             win_rate: player1.win_rate
-        });
+        };
+        console.log('Updating player1 in Firebase:', player1.id, player1UpdateData);
         console.log('player1.id type:', typeof player1.id);
         console.log('player1.id value:', player1.id);
-        await updatePlayer(player1.id, { 
-            wins: player1.wins, 
-            losses: player1.losses, 
-            current_streak: player1.current_streak,
-            win_rate: player1.win_rate
-        });
+        console.log('player1 full object:', player1);
         
-        console.log('Updating player2 in Firebase:', player2.id, { 
+        if (!player1.id) {
+            console.error('player1.id is missing, cannot update player');
+        } else {
+            await updatePlayer(player1.id, player1UpdateData);
+        }
+        
+        const player2UpdateData = { 
             wins: player2.wins, 
             losses: player2.losses, 
             current_streak: player2.current_streak,
             win_rate: player2.win_rate
-        });
+        };
+        console.log('Updating player2 in Firebase:', player2.id, player2UpdateData);
         console.log('player2.id type:', typeof player2.id);
         console.log('player2.id value:', player2.id);
-        await updatePlayer(player2.id, { 
-            wins: player2.wins, 
-            losses: player2.losses, 
-            current_streak: player2.current_streak,
-            win_rate: player2.win_rate
-        });
+        console.log('player2 full object:', player2);
+        
+        if (!player2.id) {
+            console.error('player2.id is missing, cannot update player');
+        } else {
+            await updatePlayer(player2.id, player2UpdateData);
+        }
         
         // Reload players to ensure UI shows fresh data from DB
         await loadPlayersFromFirebase();
