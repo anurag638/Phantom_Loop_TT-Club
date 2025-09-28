@@ -270,13 +270,21 @@
         let currentMonth = currentDate.getMonth();
         let currentYear = currentDate.getFullYear();
 
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
+        function initPlayerDashboard() {
             const user = TTC.getCurrentUser();
             document.getElementById('welcomeText').textContent = `Welcome, ${user.username} (${user.role})`;
-            
             loadPlayerDashboard();
             setupEventListeners();
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initPlayerDashboard();
+        });
+
+        // Also re-render after Firebase initial load
+        document.addEventListener('ttc:dataLoaded', function() {
+            initPlayerDashboard();
         });
 
         function loadPlayerDashboard() {
