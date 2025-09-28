@@ -74,8 +74,15 @@
             
             showLoading();
             
+            // Set a timeout to prevent infinite loading
+            const timeoutId = setTimeout(() => {
+                hideLoading();
+                showAlert('Login timeout. Please check your internet connection and try again.', 'danger');
+            }, 10000); // 10 second timeout
+            
             // Authenticate with Firebase
             TTC.authenticateUser(username, password).then(user => {
+                clearTimeout(timeoutId);
                 if (user) {
                     TTC.setCurrentUser(user);
                     showAlert('Login successful! Redirecting...', 'success');
@@ -91,8 +98,9 @@
                 }
                 hideLoading();
             }).catch(error => {
+                clearTimeout(timeoutId);
                 console.error('Login error:', error);
-                showAlert('Login failed. Please check your internet connection.', 'danger');
+                showAlert('Login failed: ' + error.message, 'danger');
                 hideLoading();
             });
         });

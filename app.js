@@ -353,16 +353,29 @@ function getPlayerAttendanceHistory(playerId) {
 // Authentication Functions
 async function authenticateUser(username, password) {
     try {
+        console.log('Authenticating user:', username);
+        
+        // Check if Firebase is available
+        if (!window.FirebaseDB) {
+            console.error('Firebase not loaded');
+            throw new Error('Firebase not loaded. Please refresh the page.');
+        }
+        
         const { getDocs, collection, query, where } = window.FirebaseDB;
         const usersRef = collection(window.FirebaseDB.db, 'users');
         const q = query(usersRef, where('username', '==', username));
+        
+        console.log('Querying Firebase for user...');
         const querySnapshot = await getDocs(q);
+        console.log('Query result:', querySnapshot.empty ? 'No users found' : 'Users found');
         
         if (!querySnapshot.empty) {
             const userDoc = querySnapshot.docs[0];
             const userData = userDoc.data();
+            console.log('User data found:', userData);
             
             if (userData.password === password) {
+                console.log('Password match! User authenticated');
                 return {
                     id: userDoc.id,
                     username: userData.username,
@@ -370,12 +383,16 @@ async function authenticateUser(username, password) {
                     role: userData.role,
                     playerId: userData.playerId
                 };
+            } else {
+                console.log('Password mismatch');
             }
+        } else {
+            console.log('No user found with username:', username);
         }
         return null;
     } catch (error) {
         console.error('Error authenticating user:', error);
-        return null;
+        throw error;
     }
 }
 
