@@ -486,8 +486,8 @@
             
             TTC.showLoading();
             
-            setTimeout(() => {
-                TTC.updatePlayerAttendance(playerId, status);
+            setTimeout(async () => {
+                await TTC.updatePlayerAttendance(playerId, status);
                 TTC.showAlert('Attendance updated successfully!', 'success');
                 loadPlayers(); // Refresh the players table to show updated attendance
                 TTC.hideLoading();
@@ -510,8 +510,8 @@
             
             TTC.showLoading();
             
-            setTimeout(() => {
-                TTC.updatePlayerAttendance(playerId, status, date);
+            setTimeout(async () => {
+                await TTC.updatePlayerAttendance(playerId, status, date);
                 TTC.showAlert(`Attendance marked as ${status} for ${date}`, 'success');
                 
                 // Hide date controls
@@ -528,11 +528,11 @@
             
             const formData = new FormData(event.target);
             const matchData = {
-                player1_id: parseInt(formData.get('player1_id')),
-                player2_id: parseInt(formData.get('player2_id')),
+                player1_id: formData.get('player1_id'),
+                player2_id: formData.get('player2_id'),
                 player1_score: parseInt(formData.get('player1_score')),
                 player2_score: parseInt(formData.get('player2_score')),
-                winner_id: parseInt(formData.get('winner_id')),
+                winner_id: formData.get('winner_id'),
                 match_date: formData.get('match_date')
             };
             

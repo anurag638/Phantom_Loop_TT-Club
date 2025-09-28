@@ -51,7 +51,8 @@ async function loadPlayersFromFirebase() {
         const playersSnapshot = await getDocs(collection(window.FirebaseDB.db, 'players'));
         players = [];
         playersSnapshot.forEach((doc) => {
-            players.push({ id: doc.id, ...doc.data() });
+            const data = doc.data();
+            players.push({ id: doc.id, ...data });
         });
         console.log('Players loaded from Firebase:', players.length);
     } catch (error) {
@@ -132,7 +133,8 @@ function getPlayers() {
 }
 
 function getPlayerById(id) {
-    return players.find(p => p.id === id);
+    const key = String(id);
+    return players.find(p => String(p.id) === key);
 }
 
 async function addPlayer(playerData) {
@@ -252,11 +254,11 @@ async function addMatch(matchData) {
     try {
         const { addDoc, collection } = window.FirebaseDB;
     const newMatch = {
-        player1_id: matchData.player1_id,
-        player2_id: matchData.player2_id,
+            player1_id: String(matchData.player1_id),
+            player2_id: String(matchData.player2_id),
         player1_score: matchData.player1_score,
         player2_score: matchData.player2_score,
-        winner_id: matchData.winner_id,
+            winner_id: String(matchData.winner_id),
         match_date: matchData.match_date,
         created_at: new Date().toISOString()
     };
