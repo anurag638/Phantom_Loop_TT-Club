@@ -385,13 +385,16 @@
                     </td>
                     <td>
                         <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-outline-primary" 
-                                    onclick="editPlayer(${player.id}, '${player.name}', ${player.rank})"
+                            <button class="btn btn-sm btn-outline-primary edit-player-btn" 
+                                    data-player-id="${player.id}"
+                                    data-player-name="${player.name}"
+                                    data-player-rank="${player.rank}"
                                     title="Edit Player">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" 
-                                    onclick="deletePlayer(${player.id}, '${player.name}')"
+                            <button class="btn btn-sm btn-outline-danger delete-player-btn" 
+                                    data-player-id="${player.id}"
+                                    data-player-name="${player.name}"
                                     title="Delete Player">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -454,7 +457,6 @@
                 select.addEventListener('change', handleAttendanceUpdate);
             });
 
-
             // Mark attendance for specific date
             document.querySelectorAll('.mark-attendance-btn').forEach(btn => {
                 btn.addEventListener('click', markAttendanceForDate);
@@ -462,6 +464,25 @@
 
             // Handle add match form
             document.getElementById('addMatchForm').addEventListener('submit', handleAddMatch);
+
+            // Handle edit player buttons
+            document.querySelectorAll('.edit-player-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const playerId = this.dataset.playerId;
+                    const playerName = this.dataset.playerName;
+                    const playerRank = this.dataset.playerRank;
+                    editPlayer(playerId, playerName, playerRank);
+                });
+            });
+
+            // Handle delete player buttons
+            document.querySelectorAll('.delete-player-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const playerId = this.dataset.playerId;
+                    const playerName = this.dataset.playerName;
+                    deletePlayer(playerId, playerName);
+                });
+            });
         }
 
         function updateWinnerOptions() {
@@ -573,7 +594,11 @@
 
         function editPlayer(playerId, playerName, playerRank) {
             const player = TTC.getPlayerById(playerId);
-            if (!player) return;
+            if (!player) {
+                console.error('Player not found:', playerId);
+                TTC.showAlert('Player not found', 'danger');
+                return;
+            }
             
             document.getElementById('editPlayerId').value = playerId;
             document.getElementById('editPlayerName').value = player.name;
@@ -585,7 +610,7 @@
             modal.show();
         }
 
-        function updatePlayer() {
+        async function updatePlayer() {
             const form = document.getElementById('editPlayerForm');
             const formData = new FormData(form);
             
@@ -598,13 +623,21 @@
             
             TTC.showLoading();
             
-            setTimeout(() => {
-                TTC.updatePlayer(formData.get('player_id'), updateData);
-                TTC.showAlert('Player updated successfully!', 'success');
-                bootstrap.Modal.getInstance(document.getElementById('editPlayerModal')).hide();
-                loadDashboardData();
+            try {
+                const result = await TTC.updatePlayer(formData.get('player_id'), updateData);
+                if (result) {
+                    TTC.showAlert('Player updated successfully!', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('editPlayerModal')).hide();
+                    loadDashboardData();
+                } else {
+                    TTC.showAlert('Failed to update player. Please try again.', 'danger');
+                }
+            } catch (error) {
+                console.error('Error updating player:', error);
+                TTC.showAlert('Failed to update player: ' + error.message, 'danger');
+            } finally {
                 TTC.hideLoading();
-            }, 500);
+            }
         }
 
         async function deletePlayer(playerId, playerName) {
