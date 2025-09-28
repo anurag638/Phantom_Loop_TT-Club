@@ -269,7 +269,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js?v=15"></script>
+    <script src="app.js?v=16"></script>
     <script>
         // Check authentication
         if (!TTC.checkAuth()) {
@@ -776,6 +776,7 @@
             TTC.showLoading();
             
             try {
+                console.log('CALL 5: admin dashboard calling updatePlayer');
                 const result = await TTC.updatePlayer(formData.get('player_id'), updateData);
                 if (result) {
                     TTC.showAlert('Player updated successfully!', 'success');

@@ -391,6 +391,7 @@ async function updatePlayerStats(matchData) {
         if (!player1Id) {
             console.error('player1Id is missing, cannot update player');
         } else {
+            console.log('CALL 1: updatePlayerStats calling updatePlayer for player1');
             await updatePlayer(player1Id, player1UpdateData);
         }
         
@@ -409,6 +410,7 @@ async function updatePlayerStats(matchData) {
         if (!player2Id) {
             console.error('player2Id is missing, cannot update player');
         } else {
+            console.log('CALL 2: updatePlayerStats calling updatePlayer for player2');
             await updatePlayer(player2Id, player2UpdateData);
         }
         
@@ -501,12 +503,14 @@ async function deleteMatch(matchId, player1Id, player2Id, winnerId) {
             player2.win_rate = totalGames2 > 0 ? (player2.wins / totalGames2 * 100) : 0;
             
             // Update players in Firebase
+            console.log('CALL 3: deleteMatch calling updatePlayer for player1');
             await updatePlayer(player1.id, {
                 wins: player1.wins,
                 losses: player1.losses,
                 current_streak: player1.current_streak,
                 win_rate: player1.win_rate
             });
+            console.log('CALL 4: deleteMatch calling updatePlayer for player2');
             await updatePlayer(player2.id, {
                 wins: player2.wins,
                 losses: player2.losses,
