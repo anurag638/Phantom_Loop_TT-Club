@@ -677,3 +677,17 @@ body {
 #recentMatchesTable tbody td:nth-child(2), /* Player 1 Name */
 #recentMatchesTable tbody td:nth-child(4)  /* Player 2 Name */
 { color: #000 !important; }
+
+/* Fix dropdown text color in Add Match Result form */
+#addMatchForm select,
+#addMatchForm select option,
+#addMatchForm input,
+#addMatchForm input::placeholder {
+    color: #000 !important;
+}
+
+#addMatchForm select:focus,
+#addMatchForm input:focus {
+    color: #000 !important;
+    background-color: #fff !important;
+}
