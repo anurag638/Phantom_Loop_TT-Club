@@ -146,10 +146,13 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-history"></i> Recent Matches
                         </h5>
+                        <button class="btn btn-sm btn-outline-primary" id="showMoreMatchesBtn" style="display: none;">
+                            <i class="fas fa-plus"></i> Show More
+                        </button>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -260,7 +263,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js?v=2"></script>
+    <script src="app.js?v=3"></script>
     <script>
         // Check authentication
         if (!TTC.checkAuth()) {
@@ -407,16 +410,22 @@
             setupEventListeners();
         }
 
+        let showingAllMatches = false;
+        const INITIAL_MATCHES_LIMIT = 5;
+
         function loadRecentMatches() {
-            const matches = TTC.getMatches().slice(0, 10);
+            const allMatches = TTC.getMatches();
+            const matchesToShow = showingAllMatches ? allMatches : allMatches.slice(0, INITIAL_MATCHES_LIMIT);
             const tbody = document.querySelector('#recentMatchesTable tbody');
+            const showMoreBtn = document.getElementById('showMoreMatchesBtn');
             
-            if (matches.length === 0) {
+            if (allMatches.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No recent matches found.</td></tr>';
+                showMoreBtn.style.display = 'none';
                 return;
             }
             
-            tbody.innerHTML = matches.map(match => `
+            tbody.innerHTML = matchesToShow.map(match => `
                 <tr>
                     <td>${TTC.formatDate(match.match_date)}</td>
                     <td>${TTC.getPlayerName(match.player1_id)}</td>
@@ -431,6 +440,21 @@
                     </td>
                 </tr>
             `).join('');
+            
+            // Show/hide "Show More" button based on total matches
+            if (allMatches.length > INITIAL_MATCHES_LIMIT) {
+                showMoreBtn.style.display = 'block';
+                showMoreBtn.innerHTML = showingAllMatches ? 
+                    '<i class="fas fa-minus"></i> Show Less' : 
+                    '<i class="fas fa-plus"></i> Show More';
+            } else {
+                showMoreBtn.style.display = 'none';
+            }
+        }
+
+        function toggleShowMoreMatches() {
+            showingAllMatches = !showingAllMatches;
+            loadRecentMatches();
         }
 
         function populatePlayerSelects() {
@@ -503,6 +527,12 @@
             const updatePlayerBtn = document.getElementById('updatePlayerBtn');
             if (updatePlayerBtn) {
                 updatePlayerBtn.addEventListener('click', updatePlayer);
+            }
+
+            // Handle show more matches button
+            const showMoreMatchesBtn = document.getElementById('showMoreMatchesBtn');
+            if (showMoreMatchesBtn) {
+                showMoreMatchesBtn.addEventListener('click', toggleShowMoreMatches);
             }
         }
 

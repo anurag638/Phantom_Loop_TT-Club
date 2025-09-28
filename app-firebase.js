@@ -319,8 +319,18 @@ async function updatePlayerStats(matchData) {
         player2.win_rate = totalGames2 > 0 ? (player2.wins / totalGames2 * 100) : 0;
         
         // Update in Firebase
-        await updatePlayer(player1.id, player1);
-        await updatePlayer(player2.id, player2);
+        await updatePlayer(player1.id, { 
+            wins: player1.wins, 
+            losses: player1.losses, 
+            current_streak: player1.current_streak,
+            win_rate: player1.win_rate
+        });
+        await updatePlayer(player2.id, { 
+            wins: player2.wins, 
+            losses: player2.losses, 
+            current_streak: player2.current_streak,
+            win_rate: player2.win_rate
+        });
         
         // Update rankings
         updateRankings();
