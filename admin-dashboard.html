@@ -150,9 +150,14 @@
                         <h5 class="mb-0">
                             <i class="fas fa-history"></i> Recent Matches
                         </h5>
-                        <button class="btn btn-sm btn-outline-primary" id="showMoreMatchesBtn" style="display: none;">
-                            <i class="fas fa-plus"></i> Show More
-                        </button>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary" id="showMoreMatchesBtn" style="display: none;">
+                                <i class="fas fa-plus"></i> Show More
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" id="deleteAllMatchesBtn" style="display: none;">
+                                <i class="fas fa-trash"></i> Delete All Matches
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -164,6 +169,7 @@
                                         <th>Score</th>
                                         <th>Player 2</th>
                                         <th>Winner</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -263,7 +269,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=4"></script>
     <script>
         // Check authentication
         if (!TTC.checkAuth()) {
@@ -426,7 +432,7 @@
             }
             
             tbody.innerHTML = matchesToShow.map(match => `
-                <tr>
+                <tr data-match-id="${match.id}">
                     <td>${TTC.formatDate(match.match_date)}</td>
                     <td>${TTC.getPlayerName(match.player1_id)}</td>
                     <td>
@@ -438,10 +444,20 @@
                     <td>
                         <span class="badge badge-success">${TTC.getPlayerName(match.winner_id)}</span>
                     </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger delete-match-btn" 
+                                data-match-id="${match.id}"
+                                data-player1-id="${match.player1_id}"
+                                data-player2-id="${match.player2_id}"
+                                data-winner-id="${match.winner_id}"
+                                title="Delete Match">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
                 </tr>
             `).join('');
             
-            // Show/hide "Show More" button based on total matches
+            // Show/hide buttons based on total matches
             if (allMatches.length > INITIAL_MATCHES_LIMIT) {
                 showMoreBtn.style.display = 'block';
                 showMoreBtn.innerHTML = showingAllMatches ? 
@@ -450,11 +466,71 @@
             } else {
                 showMoreBtn.style.display = 'none';
             }
+            
+            // Show/hide "Delete All Matches" button
+            const deleteAllBtn = document.getElementById('deleteAllMatchesBtn');
+            if (allMatches.length > 0) {
+                deleteAllBtn.style.display = 'block';
+            } else {
+                deleteAllBtn.style.display = 'none';
+            }
         }
 
         function toggleShowMoreMatches() {
             showingAllMatches = !showingAllMatches;
             loadRecentMatches();
+        }
+
+        async function deleteAllMatches() {
+            const allMatches = TTC.getMatches();
+            if (allMatches.length === 0) {
+                TTC.showAlert('No matches to delete', 'info');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete ALL ${allMatches.length} matches? This action cannot be undone and will reset all player statistics.`)) {
+                return;
+            }
+
+            TTC.showLoading();
+            
+            try {
+                const result = await TTC.deleteAllMatches();
+                if (result) {
+                    TTC.showAlert('All matches deleted successfully!', 'success');
+                    loadDashboardData();
+                } else {
+                    TTC.showAlert('Failed to delete all matches. Please try again.', 'danger');
+                }
+            } catch (error) {
+                console.error('Error deleting all matches:', error);
+                TTC.showAlert('Failed to delete all matches: ' + error.message, 'danger');
+            } finally {
+                TTC.hideLoading();
+            }
+        }
+
+        async function deleteMatch(matchId, player1Id, player2Id, winnerId) {
+            if (!confirm('Are you sure you want to delete this match? This will update the affected players\' statistics.')) {
+                return;
+            }
+
+            TTC.showLoading();
+            
+            try {
+                const result = await TTC.deleteMatch(matchId, player1Id, player2Id, winnerId);
+                if (result) {
+                    TTC.showAlert('Match deleted successfully!', 'success');
+                    loadDashboardData();
+                } else {
+                    TTC.showAlert('Failed to delete match. Please try again.', 'danger');
+                }
+            } catch (error) {
+                console.error('Error deleting match:', error);
+                TTC.showAlert('Failed to delete match: ' + error.message, 'danger');
+            } finally {
+                TTC.hideLoading();
+            }
         }
 
         function populatePlayerSelects() {
@@ -534,6 +610,23 @@
             if (showMoreMatchesBtn) {
                 showMoreMatchesBtn.addEventListener('click', toggleShowMoreMatches);
             }
+
+            // Handle delete all matches button
+            const deleteAllMatchesBtn = document.getElementById('deleteAllMatchesBtn');
+            if (deleteAllMatchesBtn) {
+                deleteAllMatchesBtn.addEventListener('click', deleteAllMatches);
+            }
+
+            // Handle individual match delete buttons
+            document.querySelectorAll('.delete-match-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const matchId = this.dataset.matchId;
+                    const player1Id = this.dataset.player1Id;
+                    const player2Id = this.dataset.player2Id;
+                    const winnerId = this.dataset.winnerId;
+                    deleteMatch(matchId, player1Id, player2Id, winnerId);
+                });
+            });
         }
 
         function updateWinnerOptions() {

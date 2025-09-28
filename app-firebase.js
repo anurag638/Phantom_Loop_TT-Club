@@ -337,6 +337,112 @@ async function updatePlayerStats(matchData) {
     }
 }
 
+async function deleteAllMatches() {
+    try {
+        const { deleteDoc, doc, collection, getDocs } = window.FirebaseDB;
+        
+        // Get all matches from Firebase
+        const matchesSnapshot = await getDocs(collection(window.FirebaseDB.db, 'matches'));
+        
+        // Delete all matches from Firebase
+        for (const matchDoc of matchesSnapshot.docs) {
+            await deleteDoc(matchDoc.ref);
+        }
+        
+        // Reset all player statistics
+        for (const player of players) {
+            player.wins = 0;
+            player.losses = 0;
+            player.win_rate = 0;
+            player.current_streak = 0;
+            
+            // Update player in Firebase
+            await updatePlayer(player.id, {
+                wins: 0,
+                losses: 0,
+                win_rate: 0,
+                current_streak: 0
+            });
+        }
+        
+        // Clear local matches array
+        matches = [];
+        
+        // Update rankings
+        updateRankings();
+        
+        console.log('All matches deleted and player stats reset');
+        return true;
+    } catch (error) {
+        console.error('Error deleting all matches:', error);
+        return false;
+    }
+}
+
+async function deleteMatch(matchId, player1Id, player2Id, winnerId) {
+    try {
+        const { deleteDoc, doc } = window.FirebaseDB;
+        
+        // Delete match from Firebase
+        await deleteDoc(doc(window.FirebaseDB.db, 'matches', matchId));
+        
+        // Remove from local array
+        const matchIndex = matches.findIndex(m => m.id === matchId);
+        if (matchIndex !== -1) {
+            matches.splice(matchIndex, 1);
+        }
+        
+        // Update player statistics (reverse the match result)
+        const player1 = getPlayerById(String(player1Id));
+        const player2 = getPlayerById(String(player2Id));
+        
+        if (player1 && player2) {
+            if (String(winnerId) === String(player1Id)) {
+                // Player 1 won, so reverse: decrease player1 wins, increase player2 losses
+                player1.wins = Math.max(0, player1.wins - 1);
+                player2.losses = Math.max(0, player2.losses - 1);
+                player1.current_streak = Math.min(0, player1.current_streak - 1);
+                player2.current_streak = Math.max(0, player2.current_streak + 1);
+            } else {
+                // Player 2 won, so reverse: decrease player2 wins, increase player1 losses
+                player2.wins = Math.max(0, player2.wins - 1);
+                player1.losses = Math.max(0, player1.losses - 1);
+                player2.current_streak = Math.min(0, player2.current_streak - 1);
+                player1.current_streak = Math.max(0, player1.current_streak + 1);
+            }
+            
+            // Update win rates
+            const totalGames1 = player1.wins + player1.losses;
+            const totalGames2 = player2.wins + player2.losses;
+            player1.win_rate = totalGames1 > 0 ? (player1.wins / totalGames1 * 100) : 0;
+            player2.win_rate = totalGames2 > 0 ? (player2.wins / totalGames2 * 100) : 0;
+            
+            // Update players in Firebase
+            await updatePlayer(player1.id, {
+                wins: player1.wins,
+                losses: player1.losses,
+                current_streak: player1.current_streak,
+                win_rate: player1.win_rate
+            });
+            await updatePlayer(player2.id, {
+                wins: player2.wins,
+                losses: player2.losses,
+                current_streak: player2.current_streak,
+                win_rate: player2.win_rate
+            });
+        }
+        
+        // Update rankings
+        updateRankings();
+        
+        console.log(`Match ${matchId} deleted and player stats updated`);
+        return true;
+    } catch (error) {
+        console.error('Error deleting match:', error);
+        return false;
+    }
+}
+
 // Attendance Management Functions
 async function updatePlayerAttendance(playerId, status, date = null) {
     try {
@@ -553,6 +659,8 @@ window.TTC = {
     deletePlayer,
     getMatches,
     addMatch,
+    deleteMatch,
+    deleteAllMatches,
     updatePlayerAttendance,
     getPlayerAttendanceHistory,
     
