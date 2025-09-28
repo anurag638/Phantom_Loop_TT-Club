@@ -197,6 +197,7 @@ async function updatePlayer(playerId, updateData) {
         console.log('🔄 updatePlayer called with (v11):', playerId, updateData);
         console.log('playerId type:', typeof playerId);
         console.log('playerId value:', playerId);
+        console.trace('Stack trace for updatePlayer call:');
         
         if (!playerId) {
             console.error('playerId is null or undefined');
