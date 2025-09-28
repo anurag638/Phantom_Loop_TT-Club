@@ -334,24 +334,23 @@ async function addMatch(matchData) {
 
 async function updatePlayerStats(matchData) {
     console.log('Updating player stats for match:', matchData);
-    // Ensure we have the freshest players from DB
-    try { await loadPlayersFromFirebase(); } catch (_) {}
     
-    console.log('All players in array:', players.map(p => ({ id: p.id, name: p.name })));
-    console.log('Looking for player1_id:', String(matchData.player1_id));
-    console.log('Looking for player2_id:', String(matchData.player2_id));
-    
-    const player1 = getPlayerById(String(matchData.player1_id));
-    const player2 = getPlayerById(String(matchData.player2_id));
-    
-    console.log('Found players:', { player1: player1?.name, player2: player2?.name });
-    console.log('Player1 details:', player1);
-    console.log('Player2 details:', player2);
-    
-    if (player1 && player2) {
+    try {
+        // Ensure we have the freshest players from DB
+        await loadPlayersFromFirebase();
+        
+        const player1 = getPlayerById(String(matchData.player1_id));
+        const player2 = getPlayerById(String(matchData.player2_id));
+        
+        if (!player1 || !player2) {
+            console.error('Players not found:', { player1: !!player1, player2: !!player2 });
+            return;
+        }
+        
         console.log('Before update - Player1:', { wins: player1.wins, losses: player1.losses });
         console.log('Before update - Player2:', { wins: player2.wins, losses: player2.losses });
         
+        // Update stats based on winner
         if (String(matchData.winner_id) === String(matchData.player1_id)) {
             player1.wins++;
             player2.losses++;
@@ -369,56 +368,41 @@ async function updatePlayerStats(matchData) {
         console.log('After update - Player1:', { wins: player1.wins, losses: player1.losses });
         console.log('After update - Player2:', { wins: player2.wins, losses: player2.losses });
         
-        // Update win rates
+        // Calculate win rates
         const totalGames1 = player1.wins + player1.losses;
         const totalGames2 = player2.wins + player2.losses;
         player1.win_rate = totalGames1 > 0 ? (player1.wins / totalGames1 * 100) : 0;
         player2.win_rate = totalGames2 > 0 ? (player2.wins / totalGames2 * 100) : 0;
         
-        // Persist both players' updated stats
-        const player1Id = player1.id;
+        // Update player1 in Firebase
         const player1UpdateData = { 
             wins: player1.wins, 
             losses: player1.losses, 
             current_streak: player1.current_streak,
             win_rate: player1.win_rate
         };
-        console.log('Updating player1 in Firebase:', player1Id, player1UpdateData);
-        console.log('player1Id type:', typeof player1Id);
-        console.log('player1Id value:', player1Id);
-        console.log('player1 full object:', player1);
         
-        if (!player1Id) {
-            console.error('player1Id is missing, cannot update player');
-        } else {
-            console.log('CALL 1: updatePlayerStats calling updatePlayer for player1');
-            await updatePlayer(player1Id, player1UpdateData);
-        }
+        console.log('Updating player1:', player1.id, player1UpdateData);
+        await updatePlayer(player1.id, player1UpdateData);
         
-        const player2Id = player2.id;
+        // Update player2 in Firebase
         const player2UpdateData = { 
             wins: player2.wins, 
             losses: player2.losses, 
             current_streak: player2.current_streak,
             win_rate: player2.win_rate
         };
-        console.log('Updating player2 in Firebase:', player2Id, player2UpdateData);
-        console.log('player2Id type:', typeof player2Id);
-        console.log('player2Id value:', player2Id);
-        console.log('player2 full object:', player2);
         
-        if (!player2Id) {
-            console.error('player2Id is missing, cannot update player');
-        } else {
-            console.log('CALL 2: updatePlayerStats calling updatePlayer for player2');
-            await updatePlayer(player2Id, player2UpdateData);
-        }
+        console.log('Updating player2:', player2.id, player2UpdateData);
+        await updatePlayer(player2.id, player2UpdateData);
         
-        // Reload players to ensure UI shows fresh data from DB
+        // Reload players and update rankings
         await loadPlayersFromFirebase();
-        
-        // Update rankings
         updateRankings();
+        
+        console.log('Player stats updated successfully');
+    } catch (error) {
+        console.error('Error updating player stats:', error);
     }
 }
 
