@@ -685,14 +685,47 @@ function formatWinRate(winRate) {
 }
 
 function updateRankings() {
+    // Sort by win rate (descending), then by total games (descending), then by wins (descending)
     players.sort((a, b) => {
+        // Primary: Win rate (higher is better)
+        if (b.win_rate !== a.win_rate) return b.win_rate - a.win_rate;
+        
+        // Secondary: Total games played (more games = more reliable stats)
+        const totalGamesA = a.wins + a.losses;
+        const totalGamesB = b.wins + b.losses;
+        if (totalGamesB !== totalGamesA) return totalGamesB - totalGamesA;
+        
+        // Tertiary: Total wins (more wins is better)
         if (b.wins !== a.wins) return b.wins - a.wins;
-        return b.win_rate - a.win_rate;
+        
+        // Quaternary: Fewer losses (fewer losses is better)
+        return a.losses - b.losses;
     });
     
+    // Assign ranks (1-based)
     players.forEach((player, index) => {
         player.rank = index + 1;
     });
+    
+    console.log('Updated rankings:', players.map(p => ({ name: p.name, rank: p.rank, win_rate: p.win_rate, wins: p.wins, losses: p.losses })));
+    
+    // Update ranks in Firebase
+    updateRanksInFirebase();
+}
+
+async function updateRanksInFirebase() {
+    try {
+        const { updateDoc, doc } = window.FirebaseDB;
+        
+        for (const player of players) {
+            const playerRef = doc(window.FirebaseDB.db, 'players', String(player.id));
+            await updateDoc(playerRef, { rank: player.rank });
+        }
+        
+        console.log('Ranks updated in Firebase');
+    } catch (error) {
+        console.error('Error updating ranks in Firebase:', error);
+    }
 }
 
 function getPlayerName(playerId) {
