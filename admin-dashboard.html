@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Phantom Loop TT Club</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- EmailJS Configuration -->
+    <script src="emailjs-config.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module" src="firebase-config.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <div class="logo-container"></div>
+                <span class="navbar-brand-text">Phantom Loop TT Club</span>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3" id="welcomeText">
+                    Welcome, Admin
+                </span>
+                <a class="btn btn-outline-danger btn-sm" href="#" onclick="TTC.logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="text-white mb-4">
+                    <i class="fas fa-tachometer-alt"></i> Admin Dashboard
+                </h1>
+                <div class="alert alert-success">
+                    <i class="fas fa-database"></i>
+                    <strong>Database Connected:</strong> All data is automatically synced across all devices. Players can login from anywhere with their credentials.
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4" id="statsCards">
+            <!-- Stats will be populated by JavaScript -->
+        </div>
+
+        <div class="row">
+            <!-- Player Management -->
+            <div class="col-lg-8 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users"></i> Player Management
+                        </h5>
+                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addPlayerModal">
+                            <i class="fas fa-plus"></i> Add New Player
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="playersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Name</th>
+                                        <th>Wins</th>
+                                        <th>Losses</th>
+                                        <th>Win Rate</th>
+                                        <th>Streak</th>
+                                        <th>Attendance</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Players will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Match Form -->
+            <div class="col-lg-4 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-plus"></i> Add Match Result
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="addMatchForm">
+                            <div class="mb-3">
+                                <label class="form-label">Player 1</label>
+                                <select class="form-select" name="player1_id" required>
+                                    <option value="">Select Player 1</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Player 2</label>
+                                <select class="form-select" name="player2_id" required>
+                                    <option value="">Select Player 2</option>
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">
+                                    <label class="form-label">Score 1</label>
+                                    <input type="number" class="form-control" name="player1_score" min="0" max="5" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Score 2</label>
+                                    <input type="number" class="form-control" name="player2_score" min="0" max="5" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Winner</label>
+                                <select class="form-select" name="winner_id" required>
+                                    <option value="">Select Winner</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Match Date</label>
+                                <input type="date" class="form-control" name="match_date" required>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-plus"></i> Add Match
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Matches -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history"></i> Recent Matches
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="recentMatchesTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Player 1</th>
+                                        <th>Score</th>
+                                        <th>Player 2</th>
+                                        <th>Winner</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Matches will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Player Modal -->
+    <div class="modal fade" id="addPlayerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-plus"></i> Add New Player
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addPlayerForm">
+                        <div class="mb-3">
+                            <label class="form-label">Player Name</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Initial Rank</label>
+                            <input type="number" class="form-control" name="rank" min="1" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="addPlayer()">
+                        <i class="fas fa-plus"></i> Add Player
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Player Modal -->
+    <div class="modal fade" id="editPlayerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-edit"></i> Edit Player
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editPlayerForm">
+                        <input type="hidden" name="player_id" id="editPlayerId">
+                        <div class="mb-3">
+                            <label class="form-label">Player Name</label>
+                            <input type="text" class="form-control" name="name" id="editPlayerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Rank</label>
+                            <input type="number" class="form-control" name="rank" id="editPlayerRank" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Wins</label>
+                            <input type="number" class="form-control" name="wins" id="editPlayerWins" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Losses</label>
+                            <input type="number" class="form-control" name="losses" id="editPlayerLosses" min="0" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="updatePlayer()">
+                        <i class="fas fa-save"></i> Update Player
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Check authentication
+        if (!TTC.checkAuth()) {
+            // Redirect will happen in checkAuth
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = TTC.getCurrentUser();
+            document.getElementById('welcomeText').textContent = `Welcome, ${user.username} (${user.role})`;
+            
+            loadDashboardData();
+            setupEventListeners();
+        });
+
+        function loadDashboardData() {
+            loadStats();
+            loadPlayers();
+            loadRecentMatches();
+            populatePlayerSelects();
+        }
+
+        function loadStats() {
+            const players = TTC.getPlayers();
+            const matches = TTC.getMatches();
+            const presentToday = players.filter(p => p.attendance_status === 'Present').length;
+            const avgWinRate = players.length > 0 ? 
+                (players.reduce((sum, p) => sum + p.win_rate, 0) / players.length) : 0;
+
+            const statsHtml = `
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-number">${players.length}</div>
+                        <div class="stat-label">Total Players</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="stat-number">${matches.length}</div>
+                        <div class="stat-label">Total Matches</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-number">${presentToday}</div>
+                        <div class="stat-label">Present Today</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-number">${avgWinRate.toFixed(1)}%</div>
+                        <div class="stat-label">Avg Win Rate</div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('statsCards').innerHTML = statsHtml;
+        }
+
+        function loadPlayers() {
+            const players = TTC.getPlayers();
+            const tbody = document.querySelector('#playersTable tbody');
+            
+            tbody.innerHTML = players.map(player => `
+                <tr data-player-id="${player.id}">
+                    <td>
+                        <span class="badge badge-info">${player.rank}</span>
+                    </td>
+                    <td>
+                        <strong>${player.name}</strong>
+                    </td>
+                    <td>${player.wins}</td>
+                    <td>${player.losses}</td>
+                    <td>${TTC.formatWinRate(player.win_rate)}%</td>
+                    <td>
+                        ${player.current_streak > 0 ? 
+                            `<span class="badge badge-success">+${player.current_streak}</span>` :
+                            player.current_streak < 0 ?
+                            `<span class="badge badge-danger">${player.current_streak}</span>` :
+                            `<span class="badge badge-warning">0</span>`
+                        }
+                    </td>
+                    <td>
+                        <div class="attendance-controls">
+                            <select class="form-select form-select-sm attendance-select" 
+                                    data-player-id="${player.id}" 
+                                    style="width: auto; margin-bottom: 5px;">
+                                <option value="Present" ${player.attendance_status === 'Present' ? 'selected' : ''}>Present</option>
+                                <option value="Absent" ${player.attendance_status === 'Absent' ? 'selected' : ''}>Absent</option>
+                            </select>
+                            <div class="attendance-date-controls" style="display: none;">
+                                <input type="date" class="form-control form-control-sm attendance-date" 
+                                       data-player-id="${player.id}" 
+                                       value="${new Date().toISOString().split('T')[0]}" 
+                                       style="width: auto; margin-bottom: 5px;">
+                                <button class="btn btn-sm btn-primary mark-attendance-btn" 
+                                        data-player-id="${player.id}">Mark</button>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="editPlayer(${player.id}, '${player.name}', ${player.rank})"
+                                    title="Edit Player">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="deletePlayer(${player.id}, '${player.name}')"
+                                    title="Delete Player">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Re-attach event listeners after table refresh
+            setupEventListeners();
+        }
+
+        function loadRecentMatches() {
+            const matches = TTC.getMatches().slice(0, 10);
+            const tbody = document.querySelector('#recentMatchesTable tbody');
+            
+            if (matches.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No recent matches found.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = matches.map(match => `
+                <tr>
+                    <td>${TTC.formatDate(match.match_date)}</td>
+                    <td>${TTC.getPlayerName(match.player1_id)}</td>
+                    <td>
+                        <span class="badge badge-info">
+                            ${match.player1_score} - ${match.player2_score}
+                        </span>
+                    </td>
+                    <td>${TTC.getPlayerName(match.player2_id)}</td>
+                    <td>
+                        <span class="badge badge-success">${TTC.getPlayerName(match.winner_id)}</span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function populatePlayerSelects() {
+            const players = TTC.getPlayers();
+            const selects = document.querySelectorAll('select[name="player1_id"], select[name="player2_id"]');
+            
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Select Player</option>' +
+                    players.map(player => `<option value="${player.id}">${player.name}</option>`).join('');
+                select.value = currentValue;
+            });
+        }
+
+
+        function setupEventListeners() {
+            // Update winner options when players are selected
+            document.querySelectorAll('select[name="player1_id"], select[name="player2_id"]').forEach(select => {
+                select.addEventListener('change', updateWinnerOptions);
+            });
+
+            // Handle attendance updates
+            document.querySelectorAll('.attendance-select').forEach(select => {
+                select.addEventListener('change', handleAttendanceUpdate);
+            });
+
+
+            // Mark attendance for specific date
+            document.querySelectorAll('.mark-attendance-btn').forEach(btn => {
+                btn.addEventListener('click', markAttendanceForDate);
+            });
+
+            // Handle add match form
+            document.getElementById('addMatchForm').addEventListener('submit', handleAddMatch);
+        }
+
+        function updateWinnerOptions() {
+            const player1Id = document.querySelector('select[name="player1_id"]').value;
+            const player2Id = document.querySelector('select[name="player2_id"]').value;
+            const winnerSelect = document.querySelector('select[name="winner_id"]');
+            
+            winnerSelect.innerHTML = '<option value="">Select Winner</option>';
+            
+            if (player1Id && player2Id) {
+                const player1Name = document.querySelector('select[name="player1_id"] option:checked').textContent;
+                const player2Name = document.querySelector('select[name="player2_id"] option:checked').textContent;
+                
+                winnerSelect.innerHTML += `<option value="${player1Id}">${player1Name}</option>`;
+                winnerSelect.innerHTML += `<option value="${player2Id}">${player2Name}</option>`;
+            }
+        }
+
+        function handleAttendanceUpdate(event) {
+            const playerId = parseInt(event.target.dataset.playerId);
+            const status = event.target.value;
+            
+            TTC.showLoading();
+            
+            setTimeout(() => {
+                TTC.updatePlayerAttendance(playerId, status);
+                TTC.showAlert('Attendance updated successfully!', 'success');
+                loadPlayers(); // Refresh the players table to show updated attendance
+                TTC.hideLoading();
+            }, 300);
+        }
+
+
+        function markAttendanceForDate(event) {
+            const playerId = parseInt(event.target.dataset.playerId);
+            const dateInput = document.querySelector(`.attendance-date[data-player-id="${playerId}"]`);
+            const statusSelect = document.querySelector(`.attendance-select[data-player-id="${playerId}"]`);
+            
+            const date = dateInput.value;
+            const status = statusSelect.value;
+            
+            if (!date) {
+                TTC.showAlert('Please select a date', 'danger');
+                return;
+            }
+            
+            TTC.showLoading();
+            
+            setTimeout(() => {
+                TTC.updatePlayerAttendance(playerId, status, date);
+                TTC.showAlert(`Attendance marked as ${status} for ${date}`, 'success');
+                
+                // Hide date controls
+                const dateControls = document.querySelector(`.attendance-date-controls[data-player-id="${playerId}"]`);
+                dateControls.style.display = 'none';
+                
+                loadPlayers(); // Refresh the players table to show updated attendance
+                TTC.hideLoading();
+            }, 300);
+        }
+
+        function handleAddMatch(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const matchData = {
+                player1_id: parseInt(formData.get('player1_id')),
+                player2_id: parseInt(formData.get('player2_id')),
+                player1_score: parseInt(formData.get('player1_score')),
+                player2_score: parseInt(formData.get('player2_score')),
+                winner_id: parseInt(formData.get('winner_id')),
+                match_date: formData.get('match_date')
+            };
+            
+            TTC.showLoading();
+            
+            setTimeout(() => {
+                TTC.addMatch(matchData);
+                TTC.showAlert('Match added successfully!', 'success');
+                event.target.reset();
+                loadDashboardData();
+                TTC.hideLoading();
+            }, 500);
+        }
+
+        function addPlayer() {
+            const form = document.getElementById('addPlayerForm');
+            const formData = new FormData(form);
+            
+            const playerData = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                username: formData.get('username'),
+                password: formData.get('password'),
+                rank: parseInt(formData.get('rank'))
+            };
+            
+            TTC.showLoading();
+            
+            setTimeout(() => {
+                TTC.addPlayer(playerData);
+                TTC.showAlert('Player added successfully!', 'success');
+                form.reset();
+                bootstrap.Modal.getInstance(document.getElementById('addPlayerModal')).hide();
+                loadDashboardData();
+                TTC.hideLoading();
+            }, 500);
+        }
+
+        function editPlayer(playerId, playerName, playerRank) {
+            const player = TTC.getPlayerById(playerId);
+            if (!player) return;
+            
+            document.getElementById('editPlayerId').value = playerId;
+            document.getElementById('editPlayerName').value = player.name;
+            document.getElementById('editPlayerRank').value = player.rank;
+            document.getElementById('editPlayerWins').value = player.wins;
+            document.getElementById('editPlayerLosses').value = player.losses;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editPlayerModal'));
+            modal.show();
+        }
+
+        function updatePlayer() {
+            const form = document.getElementById('editPlayerForm');
+            const formData = new FormData(form);
+            
+            const updateData = {
+                name: formData.get('name'),
+                rank: parseInt(formData.get('rank')),
+                wins: parseInt(formData.get('wins')),
+                losses: parseInt(formData.get('losses'))
+            };
+            
+            TTC.showLoading();
+            
+            setTimeout(() => {
+                TTC.updatePlayer(parseInt(formData.get('player_id')), updateData);
+                TTC.showAlert('Player updated successfully!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('editPlayerModal')).hide();
+                loadDashboardData();
+                TTC.hideLoading();
+            }, 500);
+        }
+
+        function deletePlayer(playerId, playerName) {
+            if (!confirm(`Are you sure you want to delete player "${playerName}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            TTC.showLoading();
+            
+            setTimeout(() => {
+                TTC.deletePlayer(playerId);
+                TTC.showAlert('Player deleted successfully!', 'success');
+                loadDashboardData();
+                TTC.hideLoading();
+            }, 500);
+        }
+    </script>
+</body>
+</html>
