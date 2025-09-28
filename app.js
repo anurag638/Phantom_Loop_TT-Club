@@ -729,6 +729,32 @@ async function forceFixRankings() {
     console.log('Rankings fixed!');
 }
 
+// Mark specific player attendance for a specific date
+async function markPlayerAttendance(playerName, status, date) {
+    console.log(`Marking ${playerName} as ${status} for ${date}...`);
+    
+    // Find player by name
+    const player = players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
+    if (!player) {
+        console.error(`Player "${playerName}" not found`);
+        return false;
+    }
+    
+    console.log(`Found player: ${player.name} (ID: ${player.id})`);
+    
+    // Update attendance
+    const result = await updatePlayerAttendance(player.id, status, date);
+    if (result) {
+        console.log(`Successfully marked ${player.name} as ${status} for ${date}`);
+        // Refresh data
+        await loadPlayersFromFirebase();
+        return true;
+    } else {
+        console.error(`Failed to mark ${player.name} as ${status} for ${date}`);
+        return false;
+    }
+}
+
 async function updateRanksInFirebase() {
     try {
         const { updateDoc, doc } = window.FirebaseDB;
@@ -809,6 +835,7 @@ window.TTC = {
     updatePlayerAttendance,
     getPlayerAttendanceHistory,
     forceFixRankings,
+    markPlayerAttendance,
     
     // Auth functions
     authenticateUser,
