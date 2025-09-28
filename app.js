@@ -221,18 +221,50 @@ async function updatePlayer(playerId, updateData) {
 
 async function deletePlayer(playerId) {
     try {
-        const { deleteDoc, doc } = window.FirebaseDB;
+        const { deleteDoc, doc, collection, query, where, getDocs } = window.FirebaseDB;
         
         // Delete player from Firebase
         await deleteDoc(doc(window.FirebaseDB.db, 'players', playerId));
         
+        // Delete all matches involving this player from Firebase
+        const matchesQuery = query(
+            collection(window.FirebaseDB.db, 'matches'),
+            where('player1_id', '==', playerId)
+        );
+        const matchesQuery2 = query(
+            collection(window.FirebaseDB.db, 'matches'),
+            where('player2_id', '==', playerId)
+        );
+        const matchesQuery3 = query(
+            collection(window.FirebaseDB.db, 'matches'),
+            where('winner_id', '==', playerId)
+        );
+        
+        // Delete matches where player is player1
+        const matchesSnapshot1 = await getDocs(matchesQuery);
+        for (const matchDoc of matchesSnapshot1.docs) {
+            await deleteDoc(matchDoc.ref);
+        }
+        
+        // Delete matches where player is player2
+        const matchesSnapshot2 = await getDocs(matchesQuery2);
+        for (const matchDoc of matchesSnapshot2.docs) {
+            await deleteDoc(matchDoc.ref);
+        }
+        
+        // Delete matches where player is winner
+        const matchesSnapshot3 = await getDocs(matchesQuery3);
+        for (const matchDoc of matchesSnapshot3.docs) {
+            await deleteDoc(matchDoc.ref);
+        }
+        
         // Remove from local array
-    const playerIndex = players.findIndex(p => p.id === playerId);
-    if (playerIndex !== -1) {
+        const playerIndex = players.findIndex(p => p.id === playerId);
+        if (playerIndex !== -1) {
             players.splice(playerIndex, 1);
         }
         
-        // Remove all matches involving this player
+        // Remove all matches involving this player from local array
         matches = matches.filter(m => 
             m.player1_id !== playerId && 
             m.player2_id !== playerId && 
@@ -242,6 +274,7 @@ async function deletePlayer(playerId) {
         // Update rankings
         updateRankings();
         
+        console.log(`Player ${playerId} and all related matches deleted successfully`);
         return true;
     } catch (error) {
         console.error('Error deleting player:', error);
