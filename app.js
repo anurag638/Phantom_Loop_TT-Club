@@ -194,29 +194,31 @@ async function createUserAccount(playerData, playerId) {
 
 async function updatePlayer(playerId, updateData) {
     try {
+        console.log('updatePlayer called with:', playerId, updateData);
         const { updateDoc, doc } = window.FirebaseDB;
         const playerRef = doc(window.FirebaseDB.db, 'players', String(playerId));
         
-        // Recalculate win rate using existing values when wins/losses not provided
-        const existing = getPlayerById(playerId) || {};
-        const wins = typeof updateData.wins === 'number' ? updateData.wins : (existing.wins || 0);
-        const losses = typeof updateData.losses === 'number' ? updateData.losses : (existing.losses || 0);
-        const totalGames = wins + losses;
-        updateData.win_rate = totalGames > 0 ? (wins / totalGames * 100) : 0;
+        // Use the win_rate from updateData if provided, otherwise calculate it
+        if (typeof updateData.win_rate === 'undefined' && updateData.wins !== undefined && updateData.losses !== undefined) {
+            const totalGames = updateData.wins + updateData.losses;
+            updateData.win_rate = totalGames > 0 ? (updateData.wins / totalGames * 100) : 0;
+        }
         
+        console.log('Updating player in Firebase with data:', updateData);
         await updateDoc(playerRef, updateData);
         
         // Update local array
         const playerIndex = players.findIndex(p => String(p.id) === String(playerId));
-    if (playerIndex !== -1) {
-            players[playerIndex] = { ...players[playerIndex], ...updateData, wins, losses };
+        if (playerIndex !== -1) {
+            players[playerIndex] = { ...players[playerIndex], ...updateData };
+            console.log('Updated local player:', players[playerIndex]);
         }
         
         return players[playerIndex];
     } catch (error) {
         console.error('Error updating player:', error);
-    return null;
-}
+        return null;
+    }
 }
 
 async function deletePlayer(playerId) {
@@ -327,10 +329,17 @@ async function updatePlayerStats(matchData) {
     console.log('Updating player stats for match:', matchData);
     // Ensure we have the freshest players from DB
     try { await loadPlayersFromFirebase(); } catch (_) {}
+    
+    console.log('All players in array:', players.map(p => ({ id: p.id, name: p.name })));
+    console.log('Looking for player1_id:', String(matchData.player1_id));
+    console.log('Looking for player2_id:', String(matchData.player2_id));
+    
     const player1 = getPlayerById(String(matchData.player1_id));
     const player2 = getPlayerById(String(matchData.player2_id));
     
     console.log('Found players:', { player1: player1?.name, player2: player2?.name });
+    console.log('Player1 details:', player1);
+    console.log('Player2 details:', player2);
     
     if (player1 && player2) {
         console.log('Before update - Player1:', { wins: player1.wins, losses: player1.losses });
