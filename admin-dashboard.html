@@ -269,7 +269,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js?v=20"></script>
+    <script src="app.js?v=21"></script>
     <script>
         // Check authentication
         if (!TTC.checkAuth()) {
@@ -310,7 +310,12 @@
         function loadStats() {
             const players = TTC.getPlayers();
             const matches = TTC.getMatches();
-            const presentToday = players.filter(p => p.attendance_status === 'Present').length;
+            const today = new Date().toISOString().split('T')[0];
+            const presentToday = players.filter(p => {
+                // Check if player was present today (either current status or historical record)
+                return p.attendance_status === 'Present' || 
+                       (p.attendance_history && p.attendance_history[today] === 'Present');
+            }).length;
             const avgWinRate = players.length > 0 ? 
                 (players.reduce((sum, p) => sum + p.win_rate, 0) / players.length) : 0;
 
@@ -360,7 +365,12 @@
             const players = TTC.getPlayers();
             const tbody = document.querySelector('#playersTable tbody');
             
-            tbody.innerHTML = players.map(player => `
+            tbody.innerHTML = players.map(player => {
+                // Calculate total attendance days
+                const attendanceHistory = player.attendance_history || {};
+                const totalAttendanceDays = Object.values(attendanceHistory).filter(status => status === 'Present').length;
+                
+                return `
                 <tr data-player-id="${player.id}">
                     <td>
                         <span class="badge badge-info">${player.rank}</span>
@@ -395,6 +405,9 @@
                                 <button class="btn btn-sm btn-primary mark-attendance-btn" 
                                         data-player-id="${player.id}">Mark</button>
                             </div>
+                            <div class="attendance-stats mt-1">
+                                <small class="text-muted">Total: ${totalAttendanceDays} days</small>
+                            </div>
                         </div>
                     </td>
                     <td>
@@ -415,7 +428,8 @@
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
             
             // Re-attach event listeners after table refresh
             setupEventListeners();
@@ -665,9 +679,14 @@
             TTC.showLoading();
             
             setTimeout(async () => {
-                await TTC.updatePlayerAttendance(playerId, status);
-                TTC.showAlert('Attendance updated successfully!', 'success');
-                loadPlayers(); // Refresh the players table to show updated attendance
+                const result = await TTC.updatePlayerAttendance(playerId, status);
+                if (result) {
+                    TTC.showAlert('Attendance updated successfully!', 'success');
+                    loadPlayers(); // Refresh the players table to show updated attendance
+                    loadStats(); // Refresh stats to update present count
+                } else {
+                    TTC.showAlert('Failed to update attendance. Please try again.', 'danger');
+                }
                 TTC.hideLoading();
             }, 300);
         }
@@ -689,14 +708,19 @@
             TTC.showLoading();
             
             setTimeout(async () => {
-                await TTC.updatePlayerAttendance(playerId, status, date);
-                TTC.showAlert(`Attendance marked as ${status} for ${date}`, 'success');
-                
-                // Hide date controls
-                const dateControls = document.querySelector(`.attendance-date-controls[data-player-id="${playerId}"]`);
-                dateControls.style.display = 'none';
-                
-                loadPlayers(); // Refresh the players table to show updated attendance
+                const result = await TTC.updatePlayerAttendance(playerId, status, date);
+                if (result) {
+                    TTC.showAlert(`Attendance marked as ${status} for ${date}`, 'success');
+                    
+                    // Hide date controls
+                    const dateControls = document.querySelector(`.attendance-date-controls[data-player-id="${playerId}"]`);
+                    dateControls.style.display = 'none';
+                    
+                    loadPlayers(); // Refresh the players table to show updated attendance
+                    loadStats(); // Refresh stats to update present count
+                } else {
+                    TTC.showAlert('Failed to mark attendance. Please try again.', 'danger');
+                }
                 TTC.hideLoading();
             }, 300);
         }
