@@ -25,6 +25,12 @@ async function initializeFirebaseData() {
         await ensureAdminExists();
         
         console.log('Firebase data loaded successfully');
+        // Notify pages that initial data is ready
+        try {
+            document.dispatchEvent(new CustomEvent('ttc:dataLoaded'));
+        } catch (e) {
+            console.warn('Could not dispatch data loaded event', e);
+        }
     } catch (error) {
         console.error('Error loading Firebase data:', error);
         showAlert('Error loading data. Please check your internet connection.', 'danger');

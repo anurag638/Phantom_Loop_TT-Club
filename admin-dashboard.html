@@ -268,12 +268,22 @@
         }
 
         // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
+        function initDashboard() {
             const user = TTC.getCurrentUser();
             document.getElementById('welcomeText').textContent = `Welcome, ${user.username} (${user.role})`;
             
             loadDashboardData();
             setupEventListeners();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // If data has already been loaded, render immediately
+            initDashboard();
+        });
+
+        // Also re-render once Firebase has finished initial load
+        document.addEventListener('ttc:dataLoaded', function() {
+            initDashboard();
         });
 
         function loadDashboardData() {
