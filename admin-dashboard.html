@@ -269,7 +269,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js?v=18"></script>
+    <script src="app.js?v=19"></script>
     <script>
         // Check authentication
         if (!TTC.checkAuth()) {
@@ -293,6 +293,11 @@
         // Also re-render once Firebase has finished initial load
         document.addEventListener('ttc:dataLoaded', function() {
             initDashboard();
+        });
+        
+        // Listen for rankings updates
+        document.addEventListener('ttc:rankingsUpdated', function() {
+            loadPlayers(); // Refresh only the players table
         });
 
         function loadDashboardData() {

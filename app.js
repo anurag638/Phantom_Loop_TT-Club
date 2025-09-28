@@ -55,6 +55,9 @@ async function loadPlayersFromFirebase() {
             players.push({ id: doc.id, ...data });
         });
         console.log('Players loaded from Firebase:', players.length);
+        
+        // Update rankings after loading players
+        updateRankings();
     } catch (error) {
         console.error('Error loading players:', error);
         players = [];
@@ -711,6 +714,11 @@ function updateRankings() {
     
     // Update ranks in Firebase
     updateRanksInFirebase();
+    
+    // Dispatch event to refresh UI
+    if (typeof document !== 'undefined') {
+        document.dispatchEvent(new CustomEvent('ttc:rankingsUpdated'));
+    }
 }
 
 async function updateRanksInFirebase() {
