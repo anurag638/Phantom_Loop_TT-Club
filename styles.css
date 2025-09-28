@@ -509,6 +509,7 @@ body {
     border-radius: 10px;
     padding: 20px;
     height: fit-content;
+    color: white; /* Ensure summary text is readable on dark background */
 }
 
 .attendance-stat {
@@ -545,6 +546,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    color: white; /* Make legend text white */
 }
 
 .legend-item {
@@ -552,6 +554,7 @@ body {
     align-items: center;
     gap: 8px;
     font-size: 0.9rem;
+    color: inherit; /* Inherit white from parent legend */
 }
 
 .legend-item.present i {
