@@ -470,7 +470,7 @@ function sendWelcomeEmail(email, playerName, username, password) {
         username: username,
         password: password,
         club_name: window.EMAILJS_CONFIG.CLUB_NAME,
-        login_url: window.location.origin + '/index.html'
+        login_url: 'https://anurag638.github.io/Phantom_Loop_TT-Club/'
     };
 
     console.log('Template parameters:', templateParams);

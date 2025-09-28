@@ -80,29 +80,44 @@
                 showAlert('Login timeout. Please check your internet connection and try again.', 'danger');
             }, 10000); // 10 second timeout
             
-            // Authenticate with Firebase
-            TTC.authenticateUser(username, password).then(user => {
-                clearTimeout(timeoutId);
-                if (user) {
-                    TTC.setCurrentUser(user);
-                    showAlert('Login successful! Redirecting...', 'success');
-                    setTimeout(() => {
-                        if (user.role === 'admin') {
-                            window.location.href = 'admin-dashboard.html';
-                        } else {
-                            window.location.href = 'player-dashboard.html';
-                        }
-                    }, 1000);
-                } else {
-                    showAlert('Invalid credentials', 'danger');
+            // Authenticate with Firebase (defensive: never leave loader stuck)
+            try {
+                if (!window.TTC || !TTC.authenticateUser) {
+                    throw new Error('App not ready. Please refresh and try again.');
                 }
-                hideLoading();
-            }).catch(error => {
+                TTC.authenticateUser(username, password).then(user => {
+                    clearTimeout(timeoutId);
+                    if (user) {
+                        TTC.setCurrentUser(user);
+                        showAlert('Login successful! Redirecting...', 'success');
+                        setTimeout(() => {
+                            if (user.role === 'admin') {
+                                window.location.href = 'admin-dashboard.html';
+                            } else {
+                                window.location.href = 'player-dashboard.html';
+                            }
+                        }, 1000);
+                    } else {
+                        showAlert('Invalid credentials', 'danger');
+                    }
+                    hideLoading();
+                }).catch(error => {
+                    clearTimeout(timeoutId);
+                    console.error('Login error:', error);
+                    showAlert('Login failed: ' + error.message, 'danger');
+                    hideLoading();
+                });
+            } catch (err) {
                 clearTimeout(timeoutId);
-                console.error('Login error:', error);
-                showAlert('Login failed: ' + error.message, 'danger');
+                console.error('Unexpected error during login:', err);
+                showAlert('Login failed: ' + err.message, 'danger');
                 hideLoading();
-            });
+            }
+        });
+
+        // Global safety: never keep loader visible on script errors
+        window.addEventListener('error', function(e) {
+            try { hideLoading(); } catch(_) {}
         });
     </script>
 </body>
