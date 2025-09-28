@@ -662,6 +662,12 @@ body {
     color: #6c757d !important;
 }
 
+/* Ensure highlighted current player row text is black on blue background */
+.table tr.table-primary td,
+.table tr.table-primary th {
+    color: #000 !important;
+}
+
 /* Force Name and Date text to black across key tables */
 #playersTable tbody td:nth-child(2), /* Name column */
 #leaderboardTable tbody td:nth-child(2), /* Name column */
