@@ -378,38 +378,40 @@ async function updatePlayerStats(matchData) {
         player2.win_rate = totalGames2 > 0 ? (player2.wins / totalGames2 * 100) : 0;
         
         // Persist both players' updated stats
+        const player1Id = player1.id;
         const player1UpdateData = { 
             wins: player1.wins, 
             losses: player1.losses, 
             current_streak: player1.current_streak,
             win_rate: player1.win_rate
         };
-        console.log('Updating player1 in Firebase:', player1.id, player1UpdateData);
-        console.log('player1.id type:', typeof player1.id);
-        console.log('player1.id value:', player1.id);
+        console.log('Updating player1 in Firebase:', player1Id, player1UpdateData);
+        console.log('player1Id type:', typeof player1Id);
+        console.log('player1Id value:', player1Id);
         console.log('player1 full object:', player1);
         
-        if (!player1.id) {
-            console.error('player1.id is missing, cannot update player');
+        if (!player1Id) {
+            console.error('player1Id is missing, cannot update player');
         } else {
-            await updatePlayer(player1.id, player1UpdateData);
+            await updatePlayer(player1Id, player1UpdateData);
         }
         
+        const player2Id = player2.id;
         const player2UpdateData = { 
             wins: player2.wins, 
             losses: player2.losses, 
             current_streak: player2.current_streak,
             win_rate: player2.win_rate
         };
-        console.log('Updating player2 in Firebase:', player2.id, player2UpdateData);
-        console.log('player2.id type:', typeof player2.id);
-        console.log('player2.id value:', player2.id);
+        console.log('Updating player2 in Firebase:', player2Id, player2UpdateData);
+        console.log('player2Id type:', typeof player2Id);
+        console.log('player2Id value:', player2Id);
         console.log('player2 full object:', player2);
         
-        if (!player2.id) {
-            console.error('player2.id is missing, cannot update player');
+        if (!player2Id) {
+            console.error('player2Id is missing, cannot update player');
         } else {
-            await updatePlayer(player2.id, player2UpdateData);
+            await updatePlayer(player2Id, player2UpdateData);
         }
         
         // Reload players to ensure UI shows fresh data from DB
