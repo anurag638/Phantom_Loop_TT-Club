@@ -401,7 +401,7 @@
 
         function loadAttendanceCalendar(currentPlayer) {
             attendanceData = {};
-            const attendanceRecords = TTC.getPlayerAttendanceHistory(currentPlayer.id);
+            const attendanceRecords = TTC.getPlayerAttendanceHistory(currentPlayer.id, currentYear, currentMonth);
             
             attendanceRecords.forEach(record => {
                 attendanceData[record.date] = record.status;
@@ -475,6 +475,10 @@
                     currentYear--;
                 }
                 calendarContainer.innerHTML = generateCalendarHTML();
+                // rebuild attendance map for new month
+                const user = TTC.getCurrentUser();
+                const player = TTC.getPlayerById(user.playerId);
+                loadAttendanceCalendar(player);
             });
             
             document.getElementById('nextMonth').addEventListener('click', () => {
@@ -484,6 +488,10 @@
                     currentYear++;
                 }
                 calendarContainer.innerHTML = generateCalendarHTML();
+                // rebuild attendance map for new month
+                const user = TTC.getCurrentUser();
+                const player = TTC.getPlayerById(user.playerId);
+                loadAttendanceCalendar(player);
             });
         }
 

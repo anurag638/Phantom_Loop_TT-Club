@@ -308,13 +308,29 @@ async function updatePlayerAttendance(playerId, status, date = null) {
     try {
         const attendanceDate = date || new Date().toISOString().split('T')[0];
         
-        const updateData = {
+        // Update in Firebase (including historical record)
+        const { updateDoc, doc } = window.FirebaseDB;
+        const playerRef = doc(window.FirebaseDB.db, 'players', playerId);
+        await updateDoc(playerRef, {
             attendance_status: status,
-            last_seen: attendanceDate
-        };
+            last_seen: attendanceDate,
+            [`attendance_history.${attendanceDate}`]: status
+        });
         
-        // Update in Firebase
-        await updatePlayer(playerId, updateData);
+        // Update local cache
+        const playerIndex = players.findIndex(p => p.id === playerId);
+        if (playerIndex !== -1) {
+            const existingHistory = players[playerIndex].attendance_history || {};
+            players[playerIndex] = {
+                ...players[playerIndex],
+                attendance_status: status,
+                last_seen: attendanceDate,
+                attendance_history: {
+                    ...existingHistory,
+                    [attendanceDate]: status
+                }
+            };
+        }
         
         return true;
     } catch (error) {
@@ -323,37 +339,29 @@ async function updatePlayerAttendance(playerId, status, date = null) {
     }
 }
 
-function getPlayerAttendanceHistory(playerId) {
+function getPlayerAttendanceHistory(playerId, year, monthIndex) {
     const player = getPlayerById(playerId);
     if (!player) return [];
     
-    const attendanceRecords = [];
+    const history = player.attendance_history || {};
+    const records = [];
+    const start = new Date(year, monthIndex, 1);
+    const end = new Date(year, monthIndex + 1, 0);
     const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - 30); // Show last 30 days
     
-    const currentDate = new Date(startDate);
-    while (currentDate <= today) {
-        const dateStr = currentDate.toISOString().split('T')[0];
-        let status = 'Future';
-        
-        if (currentDate > today) {
+    for (let d = 1; d <= end.getDate(); d++) {
+        const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        let status = 'No Data';
+        const current = new Date(year, monthIndex, d);
+        if (current > today) {
             status = 'Future';
-        } else if (dateStr === player.last_seen) {
-            status = player.attendance_status;
-        } else {
-            status = 'No Data';
         }
-        
-        attendanceRecords.push({
-            date: dateStr,
-            status: status
-        });
-        
-        currentDate.setDate(currentDate.getDate() + 1);
+        if (history[dateStr]) {
+            status = history[dateStr];
+        }
+        records.push({ date: dateStr, status });
     }
-    
-    return attendanceRecords;
+    return records;
 }
 
 // Authentication Functions
