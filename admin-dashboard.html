@@ -47,6 +47,13 @@
                     <i class="fas fa-database"></i>
                     <strong>Database Connected:</strong> All data is automatically synced across all devices. Players can login from anywhere with their credentials.
                 </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-fire"></i>
+                    <strong>New Streak Management:</strong> 
+                    Use the <i class="fas fa-fire"></i> button for quick streak adjustments. 
+                    Or click <strong>"Bulk Streak Adj"</strong> to reset/add to all players at once. 
+                    Positive streaks = winning streaks, negative streaks = losing streaks.
+                </div>
             </div>
         </div>
 
@@ -154,6 +161,9 @@
                             <button class="btn btn-sm btn-outline-primary" id="showMoreMatchesBtn" style="display: none;">
                                 <i class="fas fa-plus"></i> Show More
                             </button>
+                            <button class="btn btn-sm btn-outline-warning" id="bulkStreakAdjustBtn" title="Bulk Streak Adjustment">
+                                <i class="fas fa-fire"></i> Bulk Streak Adj
+                            </button>
                             <button class="btn btn-sm btn-outline-danger" id="deleteAllMatchesBtn" style="display: none;">
                                 <i class="fas fa-trash"></i> Delete All Matches
                             </button>
@@ -255,6 +265,11 @@
                         <div class="mb-3">
                             <label class="form-label">Losses</label>
                             <input type="number" class="form-control" name="losses" id="editPlayerLosses" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Current Streak</label>
+                            <input type="number" class="form-control" name="current_streak" id="editPlayerStreak" required>
+                            <small class="form-text text-muted">Positive numbers for winning streaks, negative for losing streaks</small>
                         </div>
                     </form>
                 </div>
@@ -438,6 +453,12 @@
                                     data-player-rank="${player.rank}"
                                     title="Edit Player">
                                 <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-success adjust-streak-btn" 
+                                    data-player-id="${player.id}"
+                                    data-player-name="${player.name}"
+                                    title="Quick Adjust Streak">
+                                <i class="fas fa-fire"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger delete-player-btn" 
                                     data-player-id="${player.id}"
@@ -628,6 +649,15 @@
                 });
             });
 
+            // Handle streak adjustment buttons
+            document.querySelectorAll('.adjust-streak-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const playerId = this.dataset.playerId;
+                    const playerName = this.dataset.playerName;
+                    adjustPlayerStreak(playerId, playerName);
+                });
+            });
+
             // Handle logout button
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
@@ -659,6 +689,12 @@
             const deleteAllMatchesBtn = document.getElementById('deleteAllMatchesBtn');
             if (deleteAllMatchesBtn) {
                 deleteAllMatchesBtn.addEventListener('click', deleteAllMatches);
+            }
+
+            // Handle bulk streak adjustment button
+            const bulkStreakAdjustBtn = document.getElementById('bulkStreakAdjustBtn');
+            if (bulkStreakAdjustBtn) {
+                bulkStreakAdjustBtn.addEventListener('click', bulkStreakAdjustment);
             }
 
             // Handle individual match delete buttons
@@ -813,6 +849,7 @@
             document.getElementById('editPlayerRank').value = player.rank;
             document.getElementById('editPlayerWins').value = player.wins;
             document.getElementById('editPlayerLosses').value = player.losses;
+            document.getElementById('editPlayerStreak').value = player.current_streak || 0;
             
             const modal = new bootstrap.Modal(document.getElementById('editPlayerModal'));
             modal.show();
@@ -826,7 +863,8 @@
                 name: formData.get('name'),
                 rank: parseInt(formData.get('rank')),
                 wins: parseInt(formData.get('wins')),
-                losses: parseInt(formData.get('losses'))
+                losses: parseInt(formData.get('losses')),
+                current_streak: parseInt(formData.get('current_streak'))
             };
             
             TTC.showLoading();
@@ -867,6 +905,163 @@
             } catch (error) {
                 console.error('Error deleting player:', error);
                 TTC.showAlert('Failed to delete player: ' + error.message, 'danger');
+            } finally {
+                TTC.hideLoading();
+            }
+        }
+
+        async function adjustPlayerStreak(playerId, playerName) {
+            const player = TTC.getPlayerById(playerId);
+            if (!player) {
+                TTC.showAlert('Player not found', 'danger');
+                return;
+            }
+
+            // Create a simple prompt for streak adjustment
+            const adjustment = prompt(
+                `Quick Streak Adjustment for ${playerName}\n\n` +
+                `Current streak: ${player.current_streak || 0}\n\n` +
+                `Enter positive number to increase winning streak (+)\n` +
+                `Enter negative number to increase losing streak (-)\n` +
+                `Enter 0 to reset streak\n\n` +
+                `Examples:\n` +
+                `+3 = Add 3 to winning streak\n` +
+                `-2 = Subtract 2 from streak (decrease winning or increase losing)`,
+                '0'
+            );
+
+            if (adjustment === null) return; // User cancelled
+
+            const streakAdjustment = parseInt(adjustment);
+            if (isNaN(streakAdjustment)) {
+                TTC.showAlert('Please enter a valid number (positive, negative, or 0)', 'danger');
+                return;
+            }
+
+            const newStreak = (player.current_streak || 0) + streakAdjustment;
+
+            // Confirm the adjustment
+            const confirmMsg = `Confirm streak adjustment for ${playerName}?\n\n` +
+                `Current: ${player.current_streak || 0}\n` +
+                `Adjustment: ${streakAdjustment > 0 ? '+' : ''}${streakAdjustment}\n` +
+                `New streak: ${newStreak}`;
+
+            if (!confirm(confirmMsg)) return;
+
+            TTC.showLoading();
+
+            try {
+                const result = await TTC.updatePlayer(playerId, { current_streak: newStreak });
+                if (result) {
+                    TTC.showAlert(
+                        `${playerName}'s streak updated: ${player.current_streak || 0} → ${newStreak}`, 
+                        'success'
+                    );
+                    loadPlayers(); // Refresh the players table
+                } else {
+                    TTC.showAlert('Failed to update streak. Please try again.', 'danger');
+                }
+            } catch (error) {
+                console.error('Error updating streak:', error);
+                TTC.showAlert('Failed to update streak: ' + error.message, 'danger');
+            } finally {
+                TTC.hideLoading();
+            }
+        }
+
+        async function bulkStreakAdjustment() {
+            const players = TTC.getPlayers();
+            if (players.length === 0) {
+                TTC.showAlert('No players found to adjust', 'info');
+                return;
+            }
+
+            // Show current streaks
+            let streakList = 'Current Player Streaks:\n\n';
+            players.forEach(player => {
+                streakList += `${player.name}: ${player.current_streak || 0}\n`;
+            });
+
+            const adjustmentType = prompt(
+                `Bulk Streak Adjustment\n\n${streakList}\n` +
+                `Choose adjustment type:\n` +
+                `1. Add to ALL players (e.g., +5)\n` +
+                `2. Set ALL players to same value (e.g., 0)\n` +
+                `3. Reset ALL streaks to 0\n\n` +
+                `Enter number or adjustment command:`,
+                ''
+            );
+
+            if (!adjustmentType) return;
+
+            let adjustmentValue;
+            let operation = 'set';
+
+            if (adjustmentType === '1' || adjustmentType.toLowerCase().includes('add')) {
+                const addValue = prompt('Enter value to add to ALL streaks:', '0');
+                adjustmentValue = parseInt(addValue);
+                operation = 'add';
+            } else if (adjustmentType === '2' || adjustmentType.toLowerCase().includes('set')) {
+                const setValue = prompt('Enter value to set ALL streaks to:', '0');
+                adjustmentValue = parseInt(setValue);
+                operation = 'set';
+            } else if (adjustmentType === '3' || adjustmentType.toLowerCase().includes('reset')) {
+                adjustmentValue = 0;
+                operation = 'set';
+            } else {
+                // Try to parse as direct number
+                adjustmentValue = parseInt(adjustmentType);
+                if (isNaN(adjustmentValue)) {
+                    TTC.showAlert('Invalid input. Please enter a number.', 'danger');
+                    return;
+                }
+                operation = 'set';
+            }
+
+            if (isNaN(adjustmentValue)) {
+                TTC.showAlert('Invalid number entered.', 'danger');
+                return;
+            }
+
+            const confirmMsg = `Confirm bulk streak adjustment?\n\n` +
+                `Operation: ${operation}\n` +
+                `Players: ${players.length}\n` +
+                `Adjustment: ${operation === 'add' ? 
+                    `Add ${adjustmentValue} to each streak` : 
+                    `Set all streaks to ${adjustmentValue}`}\n\n` +
+                `This will update ${players.length} players.`;
+
+            if (!confirm(confirmMsg)) return;
+
+            TTC.showLoading();
+
+            try {
+                let successCount = 0;
+                for (const player of players) {
+                    const currentStreak = player.current_streak || 0;
+                    const newStreak = operation === 'add' ? 
+                        currentStreak + adjustmentValue : 
+                        adjustmentValue;
+
+                    const result = await TTC.updatePlayer(player.id, { current_streak: newStreak });
+                    if (result) successCount++;
+                }
+
+                if (successCount === players.length) {
+                    TTC.showAlert(
+                        `Successfully updated streaks for all ${players.length} players!`, 
+                        'success'
+                    );
+                    loadPlayers(); // Refresh the table
+                } else {
+                    TTC.showAlert(
+                        `Updated ${successCount} of ${players.length} players. Some updates failed.`, 
+                        'warning'
+                    );
+                }
+            } catch (error) {
+                console.error('Error in bulk streak adjustment:', error);
+                TTC.showAlert('Bulk streak update failed: ' + error.message, 'danger');
             } finally {
                 TTC.hideLoading();
             }
