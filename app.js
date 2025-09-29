@@ -5,6 +5,7 @@
 let currentUser = null;
 let players = [];
 let matches = [];
+let announcements = [];
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -27,6 +28,7 @@ async function initializeFirebaseData() {
         await loadPlayersFromFirebase();
         await loadMatchesFromFirebase();
         await loadUsersFromFirebase();
+        await loadAnnouncementsFromFirebase();
         
         // Ensure admin exists
         await ensureAdminExists();
@@ -107,6 +109,28 @@ async function loadUsersFromFirebase() {
     } catch (error) {
         console.error('Error loading users:', error);
         return [];
+    }
+}
+
+// Announcements Management with Firebase
+async function loadAnnouncementsFromFirebase() {
+    try {
+        const { getDocs, collection, orderBy, query } = window.FirebaseDB;
+        const announcementsRef = collection(window.FirebaseDB.db, 'announcements');
+        
+        // Load announcements ordered by date (newest first)
+        const announcementsQuery = query(announcementsRef, orderBy('created_at', 'desc'));
+        const announcementsSnapshot = await getDocs(announcementsQuery);
+        
+        announcements = [];
+        announcementsSnapshot.forEach((doc) => {
+            announcements.push({ id: doc.id, ...doc.data() });
+        });
+        
+        console.log('Announcements loaded from Firebase:', announcements.length);
+    } catch (error) {
+        console.error('Error loading announcements:', error);
+        announcements = [];
     }
 }
 
@@ -1197,6 +1221,107 @@ async function testMatchSystem() {
     }
 }
 
+// Announcements CRUD Functions
+function getAnnouncements() {
+    return announcements;
+}
+
+function getAnnouncementById(id) {
+    return announcements.find(a => a.id === id);
+}
+
+async function addAnnouncement(announcementData) {
+    try {
+        const { addDoc, collection } = window.FirebaseDB;
+        
+        const newAnnouncement = {
+            title: announcementData.title,
+            content: announcementData.content,
+            type: announcementData.type || 'general', // 'tournament', 'announcement', 'update', 'event'
+            priority: announcementData.priority || 'normal', // 'high', 'normal', 'low'
+            created_at: new Date().toISOString(),
+            created_by: announcementData.created_by || 'admin',
+            is_active: true,
+            expires_at: announcementData.expires_at || null
+        };
+        
+        // Add announcement to Firebase
+        const docRef = await addDoc(collection(window.FirebaseDB.db, 'announcements'), newAnnouncement);
+        newAnnouncement.id = docRef.id;
+        
+        // Add to local array (insert at beginning)
+        announcements.unshift(newAnnouncement);
+        
+        // Dispatch event to refresh UI
+        if (typeof document !== 'undefined') {
+            document.dispatchEvent(new CustomEvent('ttc:dataUpdated'));
+        }
+        
+        return newAnnouncement;
+    } catch (error) {
+        console.error('Error adding announcement:', error);
+        throw error;
+    }
+}
+
+async function updateAnnouncement(announcementId, updateData) {
+    try {
+        const { updateDoc, doc } = window.FirebaseDB;
+        const announcementRef = doc(window.FirebaseDB.db, 'announcements', announcementId);
+        
+        await updateDoc(announcementRef, {
+            ...updateData,
+            updated_at: new Date().toISOString()
+        });
+        
+        // Update local array
+        const announcementIndex = announcements.findIndex(a => a.id === announcementId);
+        if (announcementIndex !== -1) {
+            announcements[announcementIndex] = { 
+                ...announcements[announcementIndex], 
+                ...updateData,
+                updated_at: new Date().toISOString()
+            };
+        }
+        
+        // Dispatch event to refresh UI
+        if (typeof document !== 'undefined') {
+            document.dispatchEvent(new CustomEvent('ttc:dataUpdated'));
+        }
+        
+        return announcements;
+    } catch (error) {
+        console.error('Error updating announcement:', error);
+        return null;
+    }
+}
+
+async function deleteAnnouncement(announcementId) {
+    try {
+        const { deleteDoc, doc } = window.FirebaseDB;
+        
+        // Delete announcement from Firebase
+        await deleteDoc(doc(window.FirebaseDB.db, 'announcements', announcementId));
+        
+        // Remove from local array
+        const announcementIndex = announcements.findIndex(a => a.id === announcementId);
+        if (announcementIndex !== -1) {
+            announcements.splice(announcementIndex, 1);
+        }
+        
+        // Dispatch event to refresh UI
+        if (typeof document !== 'undefined') {
+            document.dispatchEvent(new CustomEvent('ttc:dataUpdated'));
+        }
+        
+        console.log(`Announcement ${announcementId} deleted successfully`);
+        return true;
+    } catch (error) {
+        console.error('Error deleting announcement:', error);
+        return false;
+    }
+}
+
 async function updateRanksInFirebase() {
     try {
         const { updateDoc, doc } = window.FirebaseDB;
@@ -1288,6 +1413,13 @@ window.TTC = {
     validateAndFixMatchData,
     testMatchSystem,
     
+    // Announcements functions
+    getAnnouncements,
+    getAnnouncementById,
+    addAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement,
+    
     // Auth functions
     authenticateUser,
     getCurrentUser,
@@ -1316,5 +1448,6 @@ window.TTC = {
     
     // Data
     players: () => players,
-    matches: () => matches
+    matches: () => matches,
+    announcements: () => announcements
 };

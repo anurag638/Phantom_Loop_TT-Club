@@ -805,6 +805,12 @@
                 addPlayerBtn.addEventListener('click', addPlayer);
             }
 
+            // Handle add announcement button
+            const addAnnouncementBtn = document.getElementById('addAnnouncementBtn');
+            if (addAnnouncementBtn) {
+                addAnnouncementBtn.addEventListener('click', addAnnouncement);
+            }
+
             // Handle update player button
             const updatePlayerBtn = document.getElementById('updatePlayerBtn');
             if (updatePlayerBtn) {
@@ -1031,6 +1037,120 @@
             } catch (error) {
                 console.error('Error deleting player:', error);
                 TTC.showAlert('Failed to delete player: ' + error.message, 'danger');
+            } finally {
+                TTC.hideLoading();
+            }
+        }
+
+        // Announcements Functions
+        function loadAnnouncements() {
+            const announcements = TTC.getAnnouncements();
+            const tbody = document.querySelector('#announcementsTable tbody');
+            const noAnnouncements = document.getElementById('noAnnouncements');
+            
+            if (!announcements || announcements.length === 0) {
+                tbody.innerHTML = '';
+                noAnnouncements.style.display = 'block';
+                return;
+            }
+            
+            noAnnouncements.style.display = 'none';
+            
+            tbody.innerHTML = announcements.map(announcement => {
+                const typeIcon = getTypeIcon(announcement.type);
+                const priorityClass = getPriorityClass(announcement.priority);
+                const statusClass = announcement.is_active ? 'success' : 'secondary';
+                const createdDate = new Date(announcement.created_at).toLocaleDateString();
+                
+                return `
+                <tr data-announcement-id="${announcement.id}">
+                    <td>
+                        <span class="badge bg-primary">${typeIcon} ${announcement.type.charAt(0).toUpperCase() + announcement.type.slice(1)}</span>
+                    </td>
+                    <td>
+                        <div>
+                            <strong>${announcement.title}</strong>
+                            ${announcement.priority === 'high' ? '<i class="fas fa-exclamation-triangle text-warning ms-2" title="High Priority"></i>' : ''}
+                        </div>
+                        <small class="text-muted">${announcement.content.substring(0, 50)}...</small>
+                    </td>
+                    <td>
+                        <span class="badge ${priorityClass}">${announcement.priority}</span>
+                    </td>
+                    <td>${createdDate}</td>
+                    <td>
+                        <span class="badge bg-${statusClass}">
+                            ${announcement.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary edit-announcement-btn" 
+                                    data-announcement-id="${announcement.id}"
+                                    title="Edit Announcement">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-announcement-btn" 
+                                    data-announcement-id="${announcement.id}"
+                                    data-announcement-title="${announcement.title}"
+                                    title="Delete Announcement">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+            
+            // Re-attach event listeners
+            setupEventListeners();
+        }
+
+        function getTypeIcon(type) {
+            switch(type) {
+                case 'tournament': return '🏆';
+                case 'event': return '🎉';
+                case 'update': return '📢';
+                default: return '📰';
+            }
+        }
+
+        function getPriorityClass(priority) {
+            switch(priority) {
+                case 'high': return 'bg-danger';
+                case 'low': return 'bg-secondary';
+                default: return 'bg-info';
+            }
+        }
+
+        async function addAnnouncement() {
+            const form = document.getElementById('addAnnouncementForm');
+            const formData = new FormData(form);
+            
+            const announcementData = {
+                title: formData.get('title'),
+                content: formData.get('content'),
+                type: formData.get('type'),
+                priority: formData.get('priority'),
+                expires_at: formData.get('expires_at') || null,
+                created_by: 'admin'
+            };
+            
+            TTC.showLoading();
+            
+            try {
+                const newAnnouncement = await TTC.addAnnouncement(announcementData);
+                if (newAnnouncement) {
+                    TTC.showAlert('Announcement added successfully!', 'success');
+                    form.reset();
+                    bootstrap.Modal.getInstance(document.getElementById('addAnnouncementModal')).hide();
+                    loadDashboardData();
+                } else {
+                    TTC.showAlert('Failed to add announcement. Please try again.', 'danger');
+                }
+            } catch (error) {
+                console.error('Error adding announcement:', error);
+                TTC.showAlert('Failed to add announcement: ' + error.message, 'danger');
             } finally {
                 TTC.hideLoading();
             }
