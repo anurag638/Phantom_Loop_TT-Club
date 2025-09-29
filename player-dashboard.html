@@ -320,7 +320,13 @@
                     return;
                 }
                 
-                TTC.showAlert('Player data not found. Please contact admin or try refreshing the page.', 'danger');
+                // Show detailed error information
+                const errorMsg = `Player data not found for user: ${user.username}<br>
+                                 PlayerId: ${user.playerId}<br>
+                                 Available players: ${allPlayers.length}<br>
+                                 Player IDs: [${allPlayers.map(p => p.id).join(', ')}]<br>
+                                 <small>Check browser console for more details</small>`;
+                TTC.showAlert(errorMsg, 'danger');
                 return;
             }
             

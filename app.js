@@ -910,6 +910,56 @@ async function debugUserPlayerRelationships() {
     console.log('=== Debug Complete ===');
 }
 
+// Fix broken user-player relationships
+async function fixUserPlayerRelationships() {
+    console.log('=== Fixing User-Player Relationships ===');
+    
+    const users = await loadUsersFromFirebase();
+    let fixedCount = 0;
+    
+    for (const user of users) {
+        if (user.role === 'player') {
+            // If user has no playerId, try to find a player by name
+            if (!user.playerId) {
+                const player = players.find(p => p.name.toLowerCase() === user.username.toLowerCase());
+                if (player) {
+                    console.log(`Fixing user ${user.username} - linking to player ${player.name} (ID: ${player.id})`);
+                    
+                    // Update user with correct playerId
+                    const { updateDoc, doc } = window.FirebaseDB;
+                    const userRef = doc(window.FirebaseDB.db, 'users', user.username);
+                    await updateDoc(userRef, { playerId: player.id });
+                    fixedCount++;
+                } else {
+                    console.warn(`No player found for user ${user.username}`);
+                }
+            } else {
+                // Check if playerId exists
+                const player = getPlayerById(user.playerId);
+                if (!player) {
+                    console.warn(`User ${user.username} has invalid playerId: ${user.playerId}`);
+                    
+                    // Try to find player by name
+                    const playerByName = players.find(p => p.name.toLowerCase() === user.username.toLowerCase());
+                    if (playerByName) {
+                        console.log(`Fixing user ${user.username} - updating playerId from ${user.playerId} to ${playerByName.id}`);
+                        
+                        const { updateDoc, doc } = window.FirebaseDB;
+                        const userRef = doc(window.FirebaseDB.db, 'users', user.username);
+                        await updateDoc(userRef, { playerId: playerByName.id });
+                        fixedCount++;
+                    }
+                }
+            }
+        }
+    }
+    
+    console.log(`Fixed ${fixedCount} user-player relationships`);
+    console.log('=== Fix Complete ===');
+    
+    return fixedCount;
+}
+
 async function updateRanksInFirebase() {
     try {
         const { updateDoc, doc } = window.FirebaseDB;
@@ -996,6 +1046,7 @@ window.TTC = {
     migratePlayerAttendanceHistory,
     testAttendanceFunctionality,
     debugUserPlayerRelationships,
+    fixUserPlayerRelationships,
     
     // Auth functions
     authenticateUser,
