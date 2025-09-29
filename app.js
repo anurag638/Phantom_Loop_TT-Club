@@ -69,13 +69,25 @@ async function loadPlayersFromFirebase() {
 
 async function loadMatchesFromFirebase() {
     try {
-        const { getDocs, collection } = window.FirebaseDB;
-        const matchesSnapshot = await getDocs(collection(window.FirebaseDB.db, 'matches'));
+        const { getDocs, collection, orderBy, query } = window.FirebaseDB;
+        const matchesRef = collection(window.FirebaseDB.db, 'matches');
+        
+        // Load matches ordered by date (newest first)
+        const matchesQuery = query(matchesRef, orderBy('match_date', 'desc'));
+        const matchesSnapshot = await getDocs(matchesQuery);
+        
         matches = [];
         matchesSnapshot.forEach((doc) => {
-            matches.push({ id: doc.id, ...doc.data() });
+            const matchData = { id: doc.id, ...doc.data() };
+            // Ensure all IDs are strings for consistency
+            matchData.player1_id = String(matchData.player1_id);
+            matchData.player2_id = String(matchData.player2_id);
+            matchData.winner_id = String(matchData.winner_id);
+            matches.push(matchData);
         });
+        
         console.log('Matches loaded from Firebase:', matches.length);
+        console.log('Sample match data:', matches.slice(0, 3));
     } catch (error) {
         console.error('Error loading matches:', error);
         matches = [];
@@ -311,36 +323,70 @@ function getMatches() {
 async function addMatch(matchData) {
     try {
         console.log('Adding match with data:', matchData);
+        
+        // Validate match data
+        if (!matchData.player1_id || !matchData.player2_id || !matchData.winner_id) {
+            throw new Error('Missing required match data: player1_id, player2_id, or winner_id');
+        }
+        
+        if (matchData.player1_id === matchData.player2_id) {
+            throw new Error('Player 1 and Player 2 cannot be the same');
+        }
+        
+        if (matchData.winner_id !== matchData.player1_id && matchData.winner_id !== matchData.player2_id) {
+            throw new Error('Winner must be either Player 1 or Player 2');
+        }
+        
+        // Validate that players exist
+        const player1 = getPlayerById(String(matchData.player1_id));
+        const player2 = getPlayerById(String(matchData.player2_id));
+        
+        if (!player1) {
+            throw new Error(`Player 1 with ID ${matchData.player1_id} not found`);
+        }
+        if (!player2) {
+            throw new Error(`Player 2 with ID ${matchData.player2_id} not found`);
+        }
+        
         const { addDoc, collection } = window.FirebaseDB;
         const newMatch = {
             player1_id: String(matchData.player1_id),
             player2_id: String(matchData.player2_id),
-            player1_score: matchData.player1_score,
-            player2_score: matchData.player2_score,
+            player1_score: parseInt(matchData.player1_score) || 0,
+            player2_score: parseInt(matchData.player2_score) || 0,
             winner_id: String(matchData.winner_id),
             match_date: matchData.match_date,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            // Add player names for easier querying
+            player1_name: player1.name,
+            player2_name: player2.name,
+            winner_name: matchData.winner_id === matchData.player1_id ? player1.name : player2.name
         };
         
-        console.log('Normalized match data:', newMatch);
+        console.log('Validated match data:', newMatch);
         
         // Add match to Firebase
         const docRef = await addDoc(collection(window.FirebaseDB.db, 'matches'), newMatch);
         newMatch.id = docRef.id;
         console.log('Match added to Firebase with ID:', newMatch.id);
         
-        // Add to local array
-        matches.push(newMatch);
+        // Add to local array (insert at beginning since we want newest first)
+        matches.unshift(newMatch);
         
-        // Update player statistics using the normalized IDs we just wrote
-        console.log('Calling updatePlayerStats...');
+        // Update player statistics
+        console.log('Updating player stats...');
         await updatePlayerStats(newMatch);
         console.log('Player stats updated successfully');
+        
+        // Dispatch event to refresh UI
+        if (typeof document !== 'undefined') {
+            document.dispatchEvent(new CustomEvent('ttc:dataUpdated'));
+        }
         
         return newMatch;
     } catch (error) {
         console.error('Error adding match:', error);
-        return null;
+        throw error; // Re-throw so calling code can handle it
     }
 }
 
@@ -960,6 +1006,197 @@ async function fixUserPlayerRelationships() {
     return fixedCount;
 }
 
+// Recalculate all player stats from match history
+async function recalculateAllPlayerStats() {
+    console.log('=== Recalculating All Player Stats ===');
+    
+    try {
+        // Reset all player stats to zero
+        for (const player of players) {
+            player.wins = 0;
+            player.losses = 0;
+            player.current_streak = 0;
+            player.win_rate = 0;
+        }
+        
+        // Process all matches to recalculate stats
+        let processedMatches = 0;
+        for (const match of matches) {
+            const player1 = getPlayerById(String(match.player1_id));
+            const player2 = getPlayerById(String(match.player2_id));
+            
+            if (player1 && player2) {
+                if (String(match.winner_id) === String(match.player1_id)) {
+                    player1.wins++;
+                    player2.losses++;
+                    player1.current_streak = Math.max(0, player1.current_streak) + 1;
+                    player2.current_streak = Math.min(0, player2.current_streak) - 1;
+                } else {
+                    player2.wins++;
+                    player1.losses++;
+                    player2.current_streak = Math.max(0, player2.current_streak) + 1;
+                    player1.current_streak = Math.min(0, player1.current_streak) - 1;
+                }
+                processedMatches++;
+            } else {
+                console.warn(`Skipping match ${match.id} - players not found:`, {
+                    player1: !!player1,
+                    player2: !!player2,
+                    match: match
+                });
+            }
+        }
+        
+        // Calculate win rates for all players
+        for (const player of players) {
+            const totalGames = player.wins + player.losses;
+            player.win_rate = totalGames > 0 ? (player.wins / totalGames * 100) : 0;
+        }
+        
+        // Update all players in Firebase
+        const { updateDoc, doc } = window.FirebaseDB;
+        for (const player of players) {
+            const playerRef = doc(window.FirebaseDB.db, 'players', String(player.id));
+            await updateDoc(playerRef, {
+                wins: player.wins,
+                losses: player.losses,
+                current_streak: player.current_streak,
+                win_rate: player.win_rate
+            });
+        }
+        
+        // Update rankings
+        updateRankings();
+        
+        console.log(`Recalculated stats for ${players.length} players from ${processedMatches} matches`);
+        console.log('=== Stats Recalculation Complete ===');
+        
+        return { playersUpdated: players.length, matchesProcessed: processedMatches };
+    } catch (error) {
+        console.error('Error recalculating player stats:', error);
+        return null;
+    }
+}
+
+// Validate and fix match data
+async function validateAndFixMatchData() {
+    console.log('=== Validating and Fixing Match Data ===');
+    
+    let fixedMatches = 0;
+    let invalidMatches = 0;
+    
+    for (const match of matches) {
+        const issues = [];
+        
+        // Check if players exist
+        const player1 = getPlayerById(String(match.player1_id));
+        const player2 = getPlayerById(String(match.player2_id));
+        
+        if (!player1) issues.push(`Player1 (${match.player1_id}) not found`);
+        if (!player2) issues.push(`Player2 (${match.player2_id}) not found`);
+        
+        // Check if winner is one of the players
+        if (String(match.winner_id) !== String(match.player1_id) && 
+            String(match.winner_id) !== String(match.player2_id)) {
+            issues.push(`Winner (${match.winner_id}) is not one of the players`);
+        }
+        
+        // Check if scores are valid
+        if (match.player1_score < 0 || match.player2_score < 0) {
+            issues.push('Invalid scores (negative values)');
+        }
+        
+        if (issues.length > 0) {
+            console.warn(`Match ${match.id} has issues:`, issues);
+            invalidMatches++;
+        } else {
+            fixedMatches++;
+        }
+    }
+    
+    console.log(`Match validation complete: ${fixedMatches} valid, ${invalidMatches} invalid`);
+    console.log('=== Match Validation Complete ===');
+    
+    return { validMatches: fixedMatches, invalidMatches: invalidMatches };
+}
+
+// Comprehensive match system test
+async function testMatchSystem() {
+    console.log('=== Testing Match System ===');
+    
+    try {
+        // Test 1: Validate match data
+        console.log('Test 1: Validating match data...');
+        const validationResult = await validateAndFixMatchData();
+        console.log('Validation result:', validationResult);
+        
+        // Test 2: Check if we have players
+        if (players.length < 2) {
+            console.log('❌ Need at least 2 players to test match system');
+            return;
+        }
+        
+        // Test 3: Create a test match
+        console.log('Test 3: Creating test match...');
+        const player1 = players[0];
+        const player2 = players[1];
+        
+        const testMatchData = {
+            player1_id: player1.id,
+            player2_id: player2.id,
+            player1_score: 3,
+            player2_score: 1,
+            winner_id: player1.id,
+            match_date: formatLocalDate(new Date())
+        };
+        
+        console.log('Test match data:', testMatchData);
+        
+        // Test 4: Add the match
+        console.log('Test 4: Adding test match...');
+        const newMatch = await addMatch(testMatchData);
+        if (newMatch) {
+            console.log('✅ Test match added successfully:', newMatch);
+        } else {
+            console.log('❌ Failed to add test match');
+            return;
+        }
+        
+        // Test 5: Verify stats were updated
+        console.log('Test 5: Verifying player stats...');
+        const updatedPlayer1 = getPlayerById(player1.id);
+        const updatedPlayer2 = getPlayerById(player2.id);
+        
+        console.log('Player 1 stats:', {
+            wins: updatedPlayer1.wins,
+            losses: updatedPlayer1.losses,
+            win_rate: updatedPlayer1.win_rate
+        });
+        
+        console.log('Player 2 stats:', {
+            wins: updatedPlayer2.wins,
+            losses: updatedPlayer2.losses,
+            win_rate: updatedPlayer2.win_rate
+        });
+        
+        // Test 6: Recalculate all stats
+        console.log('Test 6: Recalculating all player stats...');
+        const recalculationResult = await recalculateAllPlayerStats();
+        console.log('Recalculation result:', recalculationResult);
+        
+        console.log('=== Match System Test Complete ===');
+        return {
+            validationResult,
+            testMatch: newMatch,
+            recalculationResult
+        };
+        
+    } catch (error) {
+        console.error('Error testing match system:', error);
+        return null;
+    }
+}
+
 async function updateRanksInFirebase() {
     try {
         const { updateDoc, doc } = window.FirebaseDB;
@@ -1047,6 +1284,9 @@ window.TTC = {
     testAttendanceFunctionality,
     debugUserPlayerRelationships,
     fixUserPlayerRelationships,
+    recalculateAllPlayerStats,
+    validateAndFixMatchData,
+    testMatchSystem,
     
     // Auth functions
     authenticateUser,

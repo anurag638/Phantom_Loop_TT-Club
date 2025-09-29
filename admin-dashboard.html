@@ -756,15 +756,22 @@
                 winner_id: formData.get('winner_id'),
                 match_date: formData.get('match_date')
             };
+            
+            console.log('Adding match with data:', matchData);
             TTC.showLoading();
+            
             try {
-                await TTC.addMatch(matchData);
-                TTC.showAlert('Match added successfully!', 'success');
-                event.target.reset();
-                loadDashboardData();
-            } catch (e) {
-                console.error('Failed to add match', e);
-                TTC.showAlert('Failed to add match', 'danger');
+                const newMatch = await TTC.addMatch(matchData);
+                if (newMatch) {
+                    TTC.showAlert('Match added successfully!', 'success');
+                    event.target.reset();
+                    loadDashboardData();
+                } else {
+                    TTC.showAlert('Failed to add match - no match returned', 'danger');
+                }
+            } catch (error) {
+                console.error('Failed to add match:', error);
+                TTC.showAlert(`Failed to add match: ${error.message}`, 'danger');
             }
             TTC.hideLoading();
         }
