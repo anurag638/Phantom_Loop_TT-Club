@@ -721,3 +721,27 @@ body {
     color: #000 !important;
     background-color: #fff !important;
 }
+
+/* Attendance Controls - Force black text */
+.attendance-select,
+.attendance-select option {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+.attendance-select:focus {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+/* Ensure attendance dropdown text is always black */
+.attendance-controls .form-select,
+.attendance-controls .form-select option {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+.attendance-controls .form-select:focus {
+    color: #000 !important;
+    background-color: #fff !important;
+}
