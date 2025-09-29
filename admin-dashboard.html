@@ -588,6 +588,75 @@
             }
         }
 
+        // Populate and open the edit announcement modal
+        function openEditAnnouncementModal(announcementId) {
+            const ann = TTC.getAnnouncementById(announcementId);
+            if (!ann) {
+                TTC.showAlert('Announcement not found', 'danger');
+                return;
+            }
+            document.getElementById('editAnnouncementId').value = ann.id || '';
+            document.getElementById('editAnnouncementTitle').value = ann.title || '';
+            document.getElementById('editAnnouncementContent').value = ann.content || '';
+            document.getElementById('editAnnouncementType').value = ann.type || 'general';
+            document.getElementById('editAnnouncementPriority').value = ann.priority || 'normal';
+            document.getElementById('editAnnouncementStatus').value = String(ann.is_active);
+            document.getElementById('editAnnouncementExpires').value = ann.expires_at ? ann.expires_at : '';
+            const modal = new bootstrap.Modal(document.getElementById('editAnnouncementModal'));
+            modal.show();
+        }
+
+        // Submit edited announcement
+        async function submitEditAnnouncement() {
+            const form = document.getElementById('editAnnouncementForm');
+            const formData = new FormData(form);
+            const id = formData.get('announcement_id');
+            const updateData = {
+                title: formData.get('title'),
+                content: formData.get('content'),
+                type: formData.get('type'),
+                priority: formData.get('priority'),
+                is_active: formData.get('is_active') === 'true',
+                expires_at: formData.get('expires_at') || null
+            };
+            TTC.showLoading();
+            try {
+                const result = await TTC.updateAnnouncement(id, updateData);
+                if (result) {
+                    TTC.showAlert('Announcement updated successfully!', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('editAnnouncementModal')).hide();
+                    loadDashboardData();
+                } else {
+                    TTC.showAlert('Failed to update announcement.', 'danger');
+                }
+            } catch (error) {
+                console.error('Error updating announcement:', error);
+                TTC.showAlert('Failed to update announcement: ' + error.message, 'danger');
+            } finally {
+                TTC.hideLoading();
+            }
+        }
+
+        // Delete announcement
+        async function handleDeleteAnnouncement(announcementId, title) {
+            if (!confirm(`Delete announcement "${title}"?`)) return;
+            TTC.showLoading();
+            try {
+                const ok = await TTC.deleteAnnouncement(announcementId);
+                if (ok) {
+                    TTC.showAlert('Announcement deleted successfully!', 'success');
+                    loadDashboardData();
+                } else {
+                    TTC.showAlert('Failed to delete announcement.', 'danger');
+                }
+            } catch (error) {
+                console.error('Error deleting announcement:', error);
+                TTC.showAlert('Failed to delete announcement: ' + error.message, 'danger');
+            } finally {
+                TTC.hideLoading();
+            }
+        }
+
         function loadStats() {
             const players = TTC.getPlayers();
             const matches = TTC.getMatches();
@@ -656,9 +725,11 @@
             const tbody = document.querySelector('#playersTable tbody');
             
             tbody.innerHTML = players.map(player => {
-                // Calculate total attendance days
+                // Calculate attendance stats
                 const attendanceHistory = player.attendance_history || {};
-                const totalAttendanceDays = Object.values(attendanceHistory).filter(status => status === 'Present').length;
+                const presentCount = Object.values(attendanceHistory).filter(status => status === 'Present').length;
+                const absentCount = Object.values(attendanceHistory).filter(status => status === 'Absent').length;
+                const totalAttendanceDays = presentCount;
                 
                 return `
                 <tr data-player-id="${player.id}">
@@ -686,6 +757,9 @@
                                     ${player.attendance_status}
                                 </span>
                                 <small class="text-muted d-block">Last: ${TTC.formatDate(player.last_seen)}</small>
+                            </div>
+                            <div class="attendance-mini-counts mb-1">
+                                <small class="text-muted">P: ${presentCount} &nbsp; A: ${absentCount}</small>
                             </div>
                             <select class="form-select form-select-sm attendance-select" 
                                     data-player-id="${player.id}" 
@@ -929,6 +1003,29 @@
             const updatePlayerBtn = document.getElementById('updatePlayerBtn');
             if (updatePlayerBtn) {
                 updatePlayerBtn.addEventListener('click', updatePlayer);
+            }
+
+            // Handle edit announcement buttons
+            document.querySelectorAll('.edit-announcement-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.announcementId;
+                    openEditAnnouncementModal(id);
+                });
+            });
+
+            // Handle delete announcement buttons
+            document.querySelectorAll('.delete-announcement-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.announcementId;
+                    const title = this.dataset.announcementTitle || '';
+                    handleDeleteAnnouncement(id, title);
+                });
+            });
+
+            // Handle submit edit announcement
+            const updateAnnouncementBtn = document.getElementById('updateAnnouncementBtn');
+            if (updateAnnouncementBtn) {
+                updateAnnouncementBtn.addEventListener('click', submitEditAnnouncement);
             }
 
             // Handle show more matches button
