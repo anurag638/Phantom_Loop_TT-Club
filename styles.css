@@ -745,3 +745,67 @@ body {
     color: #000 !important;
     background-color: #fff !important;
 }
+
+/* More specific targeting for attendance dropdowns */
+.form-select-sm.attendance-select,
+.form-select-sm.attendance-select option,
+.form-select-sm.attendance-select:focus {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+/* Target all select elements in attendance controls */
+.attendance-controls select,
+.attendance-controls select option,
+.attendance-controls select:focus,
+.attendance-controls select:hover {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+/* Bootstrap form-select override for attendance */
+.attendance-controls .form-select-sm,
+.attendance-controls .form-select-sm option,
+.attendance-controls .form-select-sm:focus,
+.attendance-controls .form-select-sm:hover {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+/* Global override for any select in attendance area */
+[data-player-id] + .attendance-controls select,
+[data-player-id] + .attendance-controls select option,
+[data-player-id] + .attendance-controls select:focus {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+/* Nuclear option - force all select elements to have black text */
+select,
+select option,
+select:focus,
+select:hover,
+select:active {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+/* Specific override for Bootstrap form-select */
+.form-select,
+.form-select option,
+.form-select:focus,
+.form-select:hover,
+.form-select:active {
+    color: #000 !important;
+    background-color: #fff !important;
+}
+
+/* Override for small form selects */
+.form-select-sm,
+.form-select-sm option,
+.form-select-sm:focus,
+.form-select-sm:hover,
+.form-select-sm:active {
+    color: #000 !important;
+    background-color: #fff !important;
+}
