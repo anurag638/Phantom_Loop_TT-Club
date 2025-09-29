@@ -645,6 +645,13 @@ window.TTC = {
     importPlayerData,
     
     // Data
-    players: () => players,
+    players: () => {
+        const playersCopy = [...players];
+        return playersCopy.sort((a, b) => {
+            if (b.win_rate !== a.win_rate) return b.win_rate - a.win_rate;
+            if (b.wins !== a.wins) return b.wins - a.wins;
+            return a.rank - b.rank;
+        });
+    },
     matches: () => matches
 };

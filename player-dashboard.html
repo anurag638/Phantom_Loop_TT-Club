@@ -462,7 +462,11 @@
         }
 
         function loadLeaderboard(currentPlayer) {
-            const players = TTC.getPlayers().sort((a, b) => b.wins - a.wins);
+            const players = TTC.getPlayers().sort((a, b) => {
+                if (b.win_rate !== a.win_rate) return b.win_rate - a.win_rate;
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                return a.rank - b.rank;
+            });
             const tbody = document.querySelector('#leaderboardTable tbody');
             
             tbody.innerHTML = players.slice(0, 5).map((player, index) => `
