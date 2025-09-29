@@ -269,7 +269,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js?v=23"></script>
+    <script src="app.js?v=24"></script>
     <script>
         // Check authentication
         if (!TTC.checkAuth()) {
@@ -316,11 +316,20 @@
             const players = TTC.getPlayers();
             const matches = TTC.getMatches();
             const today = new Date().toISOString().split('T')[0];
+            
+            // Calculate present today - check both current status and historical record
             const presentToday = players.filter(p => {
-                // Check if player was present today (either current status or historical record)
-                return p.attendance_status === 'Present' || 
-                       (p.attendance_history && p.attendance_history[today] === 'Present');
+                const currentStatus = p.attendance_status === 'Present';
+                const historicalStatus = p.attendance_history && p.attendance_history[today] === 'Present';
+                return currentStatus || historicalStatus;
             }).length;
+            
+            // Calculate total attendance days across all players
+            const totalAttendanceDays = players.reduce((total, p) => {
+                const history = p.attendance_history || {};
+                return total + Object.values(history).filter(status => status === 'Present').length;
+            }, 0);
+            
             const avgWinRate = players.length > 0 ? 
                 (players.reduce((sum, p) => sum + p.win_rate, 0) / players.length) : 0;
 
@@ -355,10 +364,10 @@
                 <div class="col-md-3 col-sm-6 mb-3">
                     <div class="stat-card">
                         <div class="stat-icon">
-                            <i class="fas fa-chart-line"></i>
+                            <i class="fas fa-calendar-alt"></i>
                         </div>
-                        <div class="stat-number">${avgWinRate.toFixed(1)}%</div>
-                        <div class="stat-label">Avg Win Rate</div>
+                        <div class="stat-number">${totalAttendanceDays}</div>
+                        <div class="stat-label">Total Attendance Days</div>
                     </div>
                 </div>
             `;
@@ -396,6 +405,12 @@
                     </td>
                     <td>
                         <div class="attendance-controls">
+                            <div class="current-status mb-2">
+                                <span class="badge ${player.attendance_status === 'Present' ? 'bg-success' : 'bg-danger'}">
+                                    ${player.attendance_status}
+                                </span>
+                                <small class="text-muted d-block">Last: ${TTC.formatDate(player.last_seen)}</small>
+                            </div>
                             <select class="form-select form-select-sm attendance-select" 
                                     data-player-id="${player.id}" 
                                     style="width: auto; margin-bottom: 5px;">

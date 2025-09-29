@@ -31,6 +31,9 @@ async function initializeFirebaseData() {
         // Ensure admin exists
         await ensureAdminExists();
         
+        // Migrate attendance history for existing players
+        await migratePlayerAttendanceHistory();
+        
         console.log('Firebase data loaded successfully');
         // Notify pages that initial data is ready
         try {
@@ -143,14 +146,15 @@ function getPlayerById(id) {
 async function addPlayer(playerData) {
     try {
         const { addDoc, collection } = window.FirebaseDB;
-    const newPlayer = {
-        name: playerData.name,
-        rank: playerData.rank,
-        wins: 0,
-        losses: 0,
-        current_streak: 0,
-        attendance_status: 'Present',
+        const newPlayer = {
+            name: playerData.name,
+            rank: playerData.rank,
+            wins: 0,
+            losses: 0,
+            current_streak: 0,
+            attendance_status: 'Present',
             last_seen: formatLocalDate(new Date()),
+            attendance_history: { [formatLocalDate(new Date())]: 'Present' },
             win_rate: 0.0,
             createdAt: new Date().toISOString()
         };
@@ -158,7 +162,6 @@ async function addPlayer(playerData) {
         // Add player to Firebase
         const docRef = await addDoc(collection(window.FirebaseDB.db, 'players'), newPlayer);
         newPlayer.id = docRef.id;
-        newPlayer.attendance_history = { [newPlayer.last_seen]: 'Present' };
         
         // Update local array
     players.push(newPlayer);
@@ -522,30 +525,41 @@ async function updatePlayerAttendance(playerId, status, date = null) {
     try {
         const attendanceDate = date || formatLocalDate(new Date());
         
+        // Get current player data to preserve existing attendance history
+        const player = getPlayerById(playerId);
+        if (!player) {
+            console.error('Player not found:', playerId);
+            return false;
+        }
+        
+        // Update attendance history
+        const existingHistory = player.attendance_history || {};
+        const updatedHistory = {
+            ...existingHistory,
+            [attendanceDate]: status
+        };
+        
         // Update in Firebase (including historical record)
         const { updateDoc, doc } = window.FirebaseDB;
         const playerRef = doc(window.FirebaseDB.db, 'players', playerId);
         await updateDoc(playerRef, {
             attendance_status: status,
             last_seen: attendanceDate,
-            [`attendance_history.${attendanceDate}`]: status
+            attendance_history: updatedHistory
         });
         
         // Update local cache
         const playerIndex = players.findIndex(p => p.id === playerId);
         if (playerIndex !== -1) {
-            const existingHistory = players[playerIndex].attendance_history || {};
             players[playerIndex] = {
                 ...players[playerIndex],
                 attendance_status: status,
                 last_seen: attendanceDate,
-                attendance_history: {
-                    ...existingHistory,
-                    [attendanceDate]: status
-                }
+                attendance_history: updatedHistory
             };
         }
         
+        console.log(`Updated attendance for player ${playerId}: ${status} on ${attendanceDate}`);
         return true;
     } catch (error) {
         console.error('Error updating attendance:', error);
@@ -567,12 +581,19 @@ function getPlayerAttendanceHistory(playerId, year, monthIndex) {
         const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         let status = 'No Data';
         const current = new Date(year, monthIndex, d);
+        
         if (current > today) {
             status = 'Future';
-        }
-        if (history[dateStr]) {
+        } else if (history[dateStr]) {
             status = history[dateStr];
+        } else {
+            // Check if this is today and player has current attendance status
+            const isToday = current.toDateString() === today.toDateString();
+            if (isToday && player.attendance_status) {
+                status = player.attendance_status;
+            }
         }
+        
         records.push({ date: dateStr, status });
     }
     return records;
@@ -760,9 +781,98 @@ async function markPlayerAttendance(playerName, status, date) {
     }
 }
 
+// Migrate existing players to have proper attendance history
+async function migratePlayerAttendanceHistory() {
+    console.log('Starting attendance history migration...');
+    
+    for (const player of players) {
+        if (!player.attendance_history) {
+            console.log(`Migrating player: ${player.name}`);
+            
+            // Initialize attendance history with current status
+            const initialHistory = {
+                [player.last_seen || formatLocalDate(new Date())]: player.attendance_status || 'Present'
+            };
+            
+            // Update in Firebase
+            const { updateDoc, doc } = window.FirebaseDB;
+            const playerRef = doc(window.FirebaseDB.db, 'players', player.id);
+            await updateDoc(playerRef, {
+                attendance_history: initialHistory
+            });
+            
+            // Update local cache
+            player.attendance_history = initialHistory;
+            
+            console.log(`Migrated ${player.name} with history:`, initialHistory);
+        }
+    }
+    
+    console.log('Attendance history migration completed');
+}
+
 // Simple function to mark Anurag present for Sep 28
 async function markAnuragPresent() {
     return await markPlayerAttendance('Anurag', 'Present', '2025-09-28');
+}
+
+// Check what's in the database for a specific player
+async function checkPlayerAttendance(playerName) {
+    const player = players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
+    if (!player) {
+        console.error(`Player "${playerName}" not found`);
+        return;
+    }
+    
+    console.log(`=== ${player.name} Attendance Data ===`);
+    console.log('Current Status:', player.attendance_status);
+    console.log('Last Seen:', player.last_seen);
+    console.log('Attendance History:', player.attendance_history);
+    console.log('Total Present Days:', Object.values(player.attendance_history || {}).filter(status => status === 'Present').length);
+    
+    return player;
+}
+
+// Test attendance functionality
+async function testAttendanceFunctionality() {
+    console.log('=== Testing Attendance Functionality ===');
+    
+    // Check if we have players
+    if (players.length === 0) {
+        console.log('No players found. Please add some players first.');
+        return;
+    }
+    
+    const testPlayer = players[0];
+    const testDate = formatLocalDate(new Date());
+    
+    console.log(`Testing with player: ${testPlayer.name}`);
+    console.log(`Test date: ${testDate}`);
+    
+    // Test 1: Mark player as present
+    console.log('Test 1: Marking player as Present...');
+    const result1 = await updatePlayerAttendance(testPlayer.id, 'Present', testDate);
+    console.log('Result:', result1);
+    
+    // Test 2: Check attendance history
+    console.log('Test 2: Checking attendance history...');
+    const history = getPlayerAttendanceHistory(testPlayer.id, new Date().getFullYear(), new Date().getMonth());
+    console.log('History for current month:', history);
+    
+    // Test 3: Mark player as absent for yesterday
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = formatLocalDate(yesterday);
+    
+    console.log('Test 3: Marking player as Absent for yesterday...');
+    const result2 = await updatePlayerAttendance(testPlayer.id, 'Absent', yesterdayStr);
+    console.log('Result:', result2);
+    
+    // Test 4: Final check
+    console.log('Test 4: Final attendance check...');
+    await checkPlayerAttendance(testPlayer.name);
+    
+    console.log('=== Attendance Test Complete ===');
 }
 
 async function updateRanksInFirebase() {
@@ -847,6 +957,9 @@ window.TTC = {
     forceFixRankings,
     markPlayerAttendance,
     markAnuragPresent,
+    checkPlayerAttendance,
+    migratePlayerAttendanceHistory,
+    testAttendanceFunctionality,
     
     // Auth functions
     authenticateUser,

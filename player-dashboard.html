@@ -403,6 +403,9 @@
             attendanceData = {};
             const attendanceRecords = TTC.getPlayerAttendanceHistory(currentPlayer.id, currentYear, currentMonth);
             
+            console.log('Loading attendance calendar for player:', currentPlayer.name);
+            console.log('Attendance records:', attendanceRecords);
+            
             attendanceRecords.forEach(record => {
                 attendanceData[record.date] = record.status;
             });
@@ -579,6 +582,8 @@
             const absentDays = Object.values(attendanceData).filter(status => status === 'Absent').length;
             const totalDays = presentDays + absentDays;
             const attendanceRate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+            
+            console.log('Attendance summary:', { presentDays, absentDays, totalDays, attendanceRate });
             
             document.getElementById('totalPresent').textContent = presentDays;
             document.getElementById('totalAbsent').textContent = absentDays;
