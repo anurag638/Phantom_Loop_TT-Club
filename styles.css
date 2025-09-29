@@ -897,10 +897,12 @@ select:active {
 
 .app-footer .container { text-align: center; }
 
-.app-footer .footer-logo { margin-bottom: 8px; }
+.app-footer .footer-logo { margin-bottom: 8px; display: flex; align-items: center; justify-content: center; }
 .app-footer .footer-logo img {
-    height: 36px;
-    width: auto;
+    height: 32px !important;
+    max-height: 32px !important;
+    width: auto !important;
+    max-width: 180px;
     object-fit: contain;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
