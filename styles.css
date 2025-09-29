@@ -668,7 +668,64 @@ body {
     color: #000 !important;
 }
 
-/* Force Name and Date text to black across key tables */
+/* Make "You" badge text black for visibility */
+.badge-primary,
+.badge-primary *,
+span.badge-primary,
+.badge.badge-primary,
+.badge-primary span {
+    color: #000 !important;
+}
+
+/* Specific targeting for "You" badges in tables */
+.table .badge-primary,
+.table .badge-primary *,
+.table span.badge-primary {
+    color: #000 !important;
+}
+
+/* Make highlighted player row text black */
+.table tr.table-primary td strong,
+.table tr.table-primary td,
+.table tr.table-primary td .badge {
+    color: #000 !important;
+}
+
+/* Override any white text rules for highlighted rows and "You" badges */
+.table tr.table-primary td,
+.table tr.table-primary td strong,
+.table tr.table-primary td .badge-primary,
+.table tr.table-primary td .badge-primary *,
+.table tr.table-primary td span.badge-primary {
+    color: #000 !important;
+}
+
+/* Make all text black in highlighted "You" rows - dates, wins, win rate, etc. */
+.table tr.table-primary td:nth-child(1), /* Date column */
+.table tr.table-primary td:nth-child(3), /* Wins column */
+.table tr.table-primary td:nth-child(4), /* Losses column */
+.table tr.table-primary td:nth-child(5), /* Win Rate column */
+.table tr.table-primary td:nth-child(6), /* Streak column */
+.table tr.table-primary td:nth-child(7), /* Attendance column */
+.table tr.table-primary td:nth-child(8), /* Actions column */
+.table tr.table-primary td * {
+    color: #000 !important;
+}
+
+/* Specific targeting for player dashboard tables */
+#leaderboardTable tr.table-primary td,
+#attendanceTable tr.table-primary td,
+#leaderboardTable tr.table-primary td *,
+#attendanceTable tr.table-primary td * {
+    color: #000 !important;
+}
+
+/* Make date column black only for "You" row in attendance table */
+#attendanceTable tr.table-primary td:nth-child(3) {
+    color: #000 !important;
+}
+
+/* Force Name and Date text to white across key tables for better visibility */
 #playersTable tbody td:nth-child(2), /* Name column */
 #leaderboardTable tbody td:nth-child(2), /* Name column */
 #attendanceTable tbody td:nth-child(1), /* Player Name */
@@ -676,7 +733,26 @@ body {
 #recentMatchesTable tbody td:nth-child(1), /* Match Date */
 #recentMatchesTable tbody td:nth-child(2), /* Player 1 Name */
 #recentMatchesTable tbody td:nth-child(4)  /* Player 2 Name */
-{ color: #000 !important; }
+{ color: #fff !important; }
+
+/* Additional white text for player dashboard tables */
+#leaderboardTable tbody td,
+#attendanceTable tbody td {
+    color: #fff !important;
+}
+
+/* Specific targeting for player names in all tables */
+.table tbody td strong,
+.table tbody td .badge,
+.table tbody td {
+    color: #fff !important;
+}
+
+/* Ensure dates are white in all contexts */
+.table tbody td:first-child,
+.table tbody td:last-child {
+    color: #fff !important;
+}
 
 /* Fix dropdown text color in Add Match Result form */
 #addMatchForm select,
