@@ -458,7 +458,7 @@ async function updatePlayerStats(matchData) {
         
         // Update player1 in Firebase
         const player1UpdateData = { 
-            wins: player1.wins, 
+            wins: player1.wins,
             losses: player1.losses, 
             current_streak: player1.current_streak,
             win_rate: player1.win_rate
@@ -481,6 +481,7 @@ async function updatePlayerStats(matchData) {
         // Reload players and update rankings
         await loadPlayersFromFirebase();
         updateRankings();
+        await updateRanksInFirebase();
         
         console.log('Player stats updated successfully');
     } catch (error) {
