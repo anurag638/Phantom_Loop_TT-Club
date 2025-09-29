@@ -289,10 +289,38 @@
 
         function loadPlayerDashboard() {
             const user = TTC.getCurrentUser();
+            console.log('Current user:', user);
+            console.log('User playerId:', user.playerId);
+            console.log('Available players:', TTC.getPlayers());
+            
+            if (!user || !user.playerId) {
+                console.error('User or playerId not found:', user);
+                TTC.showAlert('User session invalid. Please login again.', 'danger');
+                setTimeout(() => {
+                    TTC.logout();
+                }, 2000);
+                return;
+            }
+            
             const player = TTC.getPlayerById(user.playerId);
+            console.log('Found player:', player);
             
             if (!player) {
-                TTC.showAlert('Player data not found', 'danger');
+                console.error('Player not found for user:', user);
+                
+                // Check if players array is empty (data not loaded yet)
+                const allPlayers = TTC.getPlayers();
+                if (allPlayers.length === 0) {
+                    console.log('Players array is empty, waiting for data to load...');
+                    TTC.showAlert('Loading player data...', 'info');
+                    // Wait a bit and try again
+                    setTimeout(() => {
+                        loadPlayerDashboard();
+                    }, 1000);
+                    return;
+                }
+                
+                TTC.showAlert('Player data not found. Please contact admin or try refreshing the page.', 'danger');
                 return;
             }
             

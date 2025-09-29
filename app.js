@@ -139,8 +139,14 @@ function getPlayers() {
 }
 
 function getPlayerById(id) {
+    if (!id) {
+        console.error('getPlayerById called with null/undefined id');
+        return null;
+    }
     const key = String(id);
-    return players.find(p => String(p.id) === key);
+    const player = players.find(p => String(p.id) === key);
+    console.log(`getPlayerById(${id}) -> found:`, player);
+    return player;
 }
 
 async function addPlayer(playerData) {
@@ -875,6 +881,35 @@ async function testAttendanceFunctionality() {
     console.log('=== Attendance Test Complete ===');
 }
 
+// Debug function to check user-player relationships
+async function debugUserPlayerRelationships() {
+    console.log('=== Debugging User-Player Relationships ===');
+    
+    // Load users from Firebase
+    const users = await loadUsersFromFirebase();
+    console.log('All users:', users);
+    
+    // Check each user
+    for (const user of users) {
+        console.log(`\nUser: ${user.username} (${user.role})`);
+        console.log('User data:', user);
+        
+        if (user.role === 'player' && user.playerId) {
+            const player = getPlayerById(user.playerId);
+            console.log(`Player found for ${user.username}:`, player);
+            
+            if (!player) {
+                console.error(`❌ Player not found for user ${user.username} with playerId: ${user.playerId}`);
+            } else {
+                console.log(`✅ Player found: ${player.name}`);
+            }
+        }
+    }
+    
+    console.log('\nAll players:', players);
+    console.log('=== Debug Complete ===');
+}
+
 async function updateRanksInFirebase() {
     try {
         const { updateDoc, doc } = window.FirebaseDB;
@@ -960,6 +995,7 @@ window.TTC = {
     checkPlayerAttendance,
     migratePlayerAttendanceHistory,
     testAttendanceFunctionality,
+    debugUserPlayerRelationships,
     
     // Auth functions
     authenticateUser,
