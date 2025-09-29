@@ -1047,7 +1047,10 @@
                 if (newMatch) {
                     TTC.showAlert('Match added successfully!', 'success');
                     event.target.reset();
-                    loadDashboardData();
+                    // Small delay to ensure Firebase updates are complete
+                    setTimeout(() => {
+                        loadDashboardData();
+                    }, 500);
                 } else {
                     TTC.showAlert('Failed to add match - no match returned', 'danger');
                 }

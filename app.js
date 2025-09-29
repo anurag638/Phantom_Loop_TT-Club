@@ -447,6 +447,17 @@ async function updatePlayerStats(matchData) {
             console.log('Player2 won the match');
         }
         
+        // Update the local players array
+        const player1Index = players.findIndex(p => String(p.id) === String(player1.id));
+        const player2Index = players.findIndex(p => String(p.id) === String(player2.id));
+        
+        if (player1Index !== -1) {
+            players[player1Index] = { ...players[player1Index], ...player1 };
+        }
+        if (player2Index !== -1) {
+            players[player2Index] = { ...players[player2Index], ...player2 };
+        }
+        
         console.log('After update - Player1:', { wins: player1.wins, losses: player1.losses });
         console.log('After update - Player2:', { wins: player2.wins, losses: player2.losses });
         
@@ -588,6 +599,7 @@ async function deleteMatch(matchId, player1Id, player2Id, winnerId) {
         
         // Update rankings
         updateRankings();
+        await updateRanksInFirebase();
         
         console.log(`Match ${matchId} deleted and player stats updated`);
         return true;
