@@ -1160,5 +1160,20 @@
         }
 
     </script>
+    <footer class="app-footer">
+        <div class="container">
+            <div class="footer-logo">
+                <img src="logo.jpg" alt="Phantom Loop TT Club Logo">
+            </div>
+            <div class="footer-text">© <span id="footerYear"></span> Phantom Loop TT Club</div>
+            <div class="footer-text">Created by Anurag (22BCS019)</div>
+        </div>
+    </footer>
+    <script>
+        (function(){
+            var yEl = document.getElementById('footerYear');
+            if (yEl) { yEl.textContent = new Date().getFullYear(); }
+        })();
+    </script>
 </body>
 </html>
